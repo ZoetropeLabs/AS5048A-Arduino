@@ -1,7 +1,7 @@
 #if ARDUINO >= 100
-  #include "Arduino.h"
+	#include "Arduino.h"
 #else
-  #include "WProgram.h"
+	#include "WProgram.h"
 #endif
 
 #include <AS5048A.h>
@@ -13,15 +13,20 @@
  * Constructor
  */
 AS5048A::AS5048A(byte arg_cs){
-  _cs = arg_cs;
-  errorFlag = false;
-  position = 0;
+	_cs = arg_cs;
+	errorFlag = false;
+	position = 0;
 
-  //setup pins
-  pinMode(_cs,OUTPUT);
+	//setup pins
+	pinMode(_cs,OUTPUT);
 
 }
 
+
+/**
+ * Initialiser
+ * Sets up the SPI interface
+ */
 void AS5048A::init()
 {
 	SPI.setDataMode(SPI_MODE1);
@@ -30,25 +35,31 @@ void AS5048A::init()
 	SPI.begin();
 }
 
+/**
+ * Closes the SPI connection
+ */
 void AS5048A::close()
 {
 	SPI.end();
 }
 
+/**
+ * Utility function used to calculate even parity of word
+ */
 byte AS5048A::spiCalcEvenParity(word value)
 {
-   byte cnt = 0;
-   byte i;
+	byte cnt = 0;
+	byte i;
 
-   for (i = 0; i < 16; i++)
-   {
-       if (value & 0x1)
-       {
-           cnt++;
-       }
-       value >>= 1;
-   }
-   return cnt & 0x1;
+	for (i = 0; i < 16; i++)
+	{
+		if (value & 0x1)
+		{
+			cnt++;
+		}
+		value >>= 1;
+	}
+	return cnt & 0x1;
 }
 
 
@@ -59,19 +70,22 @@ byte AS5048A::spiCalcEvenParity(word value)
  * @return {int} between -2^13 and 2^13
  */
 int AS5048A::getRotation(){
-  word data;
-  int rotation;
+	word data;
+	int rotation;
 
-  data = AS5048A::getRawRotation();
-  rotation = (int)data - (int)position;
-  if(rotation > 8191) rotation = -((0x3FFF)-rotation); //more than -180
-  //if(rotation < -0x1FFF) rotation = rotation+0x3FFF;
+	data = AS5048A::getRawRotation();
+	rotation = (int)data - (int)position;
+	if(rotation > 8191) rotation = -((0x3FFF)-rotation); //more than -180
+	//if(rotation < -0x1FFF) rotation = rotation+0x3FFF;
 
-  return rotation;
+	return rotation;
 }
 
+/**
+ * Returns the raw angle directly from the sensor
+ */
 word AS5048A::getRawRotation(){
-  return AS5048A::read(AS5048A_ANGLE);
+	return AS5048A::read(AS5048A_ANGLE);
 }
 
 /**
@@ -79,41 +93,64 @@ word AS5048A::getRawRotation(){
  * @return 16 bit word containing flags
  */
 word AS5048A::getState(){
-  return AS5048A::read(AS5048A_DIAG_AGC);
+	return AS5048A::read(AS5048A_DIAG_AGC);
 }
 
+/**
+ * Print the diagnostic register of the sensor
+ */
 void AS5048A::printState(){
-  word data;
+	word data;
 
-  data = AS5048A::getState();
-  if(AS5048A::error()){
-    Serial.print("Error bit was set!");
-  }
-  Serial.println(data, BIN);
+	data = AS5048A::getState();
+	if(AS5048A::error()){
+		Serial.print("Error bit was set!");
+	}
+	Serial.println(data, BIN);
 }
 
+/**
+ * Returns the value used for Automatic Gain Control (Part of diagnostic
+ * register)
+ */
 byte AS5048A::getGain(){
-  word data = AS5048A::getState();
-  return (byte) data & 0xFF;
+	word data = AS5048A::getState();
+	return (byte) data & 0xFF;
 }
 
+/*
+ * Get and clear the error register by reading it
+ */
 word AS5048A::getErrors(){
-  return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG);
+	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG);
 }
 
+/*
+ * Set the zero position
+ */
 void AS5048A::setZeroPosition(word arg_position){
-  position = arg_position % 0x3FFF;
+	position = arg_position % 0x3FFF;
 }
 
+/*
+ * Returns the current zero position
+ */
 word AS5048A::getZeroPosition(){
-  return position;
+	return position;
 }
 
+/*
+ * Check if an error has been encountered.
+ */
 bool AS5048A::error(){
-  return errorFlag;
+	return errorFlag;
 }
 
-
+/*
+ * Read a register from the sensor
+ * Takes the address of the register as a 16 bit word
+ * Returns the value of the register
+ */
 word AS5048A::read(word registerAddress){
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
@@ -164,6 +201,14 @@ word AS5048A::read(word registerAddress){
 	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
 }
 
+
+/*
+ * Write to a register
+ * Takes the 16-bit  address of the target register and the 16 bit word of data
+ * to be written to that register
+ * Returns the value of the register after the write has been performed. This
+ * is read back from the sensor to ensure a sucessful write.
+ */
 word AS5048A::write(word registerAddress, word data) {
 
 	word command = 0b0000000000000000; // PAR=0 R/W=W

@@ -13,57 +13,101 @@
 
 class AS5048A{
 
-  bool errorFlag;
-  byte _cs;
-  byte cs;
-  byte dout;
-  byte din;
-  byte clk;
-  word position;
-  word transaction(word data);
+	bool errorFlag;
+	byte _cs;
+	byte cs;
+	byte dout;
+	byte din;
+	byte clk;
+	word position;
+	word transaction(word data);
 
-  public:
+	public:
 
-  /**
-   *
-   */
-  AS5048A(byte arg_cs);
-  void init();
-  void close();
+	/**
+	 *	Constructor
+	 */
+	AS5048A(byte arg_cs);
 
+	/**
+	 * Initialiser
+	 * Sets up the SPI interface
+	 */
+	void init();
 
+	/**
+	 * Closes the SPI connection
+	 */
+	void close();
+
+	/*
+	 * Read a register from the sensor
+	 * Takes the address of the register as a 16 bit word
+	 * Returns the value of the register
+	 */
 	word read(word registerAddress);
+
+	/*
+	 * Write to a register
+	 * Takes the 16-bit  address of the target register and the 16 bit word of data
+	 * to be written to that register
+	 * Returns the value of the register after the write has been performed. This
+	 * is read back from the sensor to ensure a sucessful write.
+	 */
 	word write(word registerAddress, word data);
 
-  //most important!
-  int getRotation();
+	/**
+	 * Get the rotation of the sensor relative to the zero position.
+	 *
+	 * @return {int} between -2^13 and 2^13
+	 */
+	int getRotation();
 
-  //return the raw position
-  word getRawRotation();
+	/**
+	 * Returns the raw angle directly from the sensor
+	 */
+	word getRawRotation();
 
-  //just for diagnostics
-  word getState();
 
-  //print the state, over the serial line
-  void printState();
+	/**
+	 * returns the value of the state register
+	 * @return 16 bit word containing flags
+	 */
+	word getState();
 
-  //like get start, but just returns the gain
-  byte getGain();
+	/**
+	 * Print the diagnostic register of the sensor
+	 */
+	void printState();
 
-  //get the error flags and reset the error register
-  word getErrors();
+	/**
+	 * Returns the value used for Automatic Gain Control (Part of diagnostic
+	 * register)
+	 */
+	byte getGain();
 
-  //set what value is the zero position, returned
-  //values will be relative to this
-  void setZeroPosition(word arg_position);
+	/*
+	 * Get and clear the error register by reading it
+	 */
+	word getErrors();
 
-  word getZeroPosition();
+	/*
+	 * Set the zero position
+	 */
+	void setZeroPosition(word arg_position);
 
-  //returns true if there's an error
-  bool error();
+	/*
+	 * Returns the current zero position
+	 */
+	word getZeroPosition();
 
-  private:
+	/*
+	 * Check if an error has been encountered.
+	 */
+	bool error();
 
-  byte spiCalcEvenParity(word);
+	private:
+
+	byte spiCalcEvenParity(word);
 };
 #endif
