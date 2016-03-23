@@ -32,10 +32,6 @@ void AS5048A::init(){
 	
 	//setup pins
 	pinMode(_cs, OUTPUT);
-	
-	//SPI.setDataMode(SPI_MODE1);
-	//SPI.setClockDivider(SPI_CLOCK_DIV64);
-	//SPI.setBitOrder(MSBFIRST);
 
 	//SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
 	SPI.begin();
