@@ -1,15 +1,8 @@
 #ifndef as5048_h
 #define as5048_h
-#define LIBRARY_VERSION 1.0.0
+#define LIBRARY_VERSION 1.0.1
 
-
-#define AS5048A_CLEAR_ERROR_FLAG 0x0001
-#define AS5048A_PROGRAMMING_CONTROL 0x0003
-#define AS5048A_OTP_REGISTER_ZERO_POS_HIGH 0x0016
-#define AS5048A_OTP_REGISTER_ZERO_POS_LOW 0x0017
-#define AS5048A_DIAG_AGC 0x3FFD
-#define AS5048A_MAGNITUDE 0x3FFE
-#define AS5048A_ANGLE 0x3FFF
+#include <SPI.h>
 
 class AS5048A{
 
@@ -21,7 +14,9 @@ class AS5048A{
 	byte clk;
 	word position;
 	word transaction(word data);
-
+	
+	SPISettings settings;
+	
 	public:
 
 	/**
