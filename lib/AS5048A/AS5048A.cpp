@@ -1,13 +1,16 @@
-#if ARDUINO >= 100
-	#include "Arduino.h"
-#else
-	#include "WProgram.h"
-#endif
+#include "Arduino.h"
 
 #include <AS5048A.h>
-#include <SPI.h>
 
 //#define AS5048A_DEBUG
+
+const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001;
+const int AS5048A_PROGRAMMING_CONTROL           = 0x0003;
+const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016;
+const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017;
+const int AS5048A_DIAG_AGC                      = 0x3FFD;
+const int AS5048A_MAGNITUDE                     = 0x3FFE;
+const int AS5048A_ANGLE                         = 0x3FFF;
 
 /**
  * Constructor
@@ -16,10 +19,6 @@ AS5048A::AS5048A(byte arg_cs){
 	_cs = arg_cs;
 	errorFlag = false;
 	position = 0;
-
-	//setup pins
-	pinMode(_cs,OUTPUT);
-
 }
 
 
@@ -27,27 +26,29 @@ AS5048A::AS5048A(byte arg_cs){
  * Initialiser
  * Sets up the SPI interface
  */
-void AS5048A::init()
-{
-	SPI.setDataMode(SPI_MODE1);
-	SPI.setClockDivider(SPI_CLOCK_DIV64);
-	SPI.setBitOrder(MSBFIRST);
+void AS5048A::init(){
+	// 1MHz clock (AMS should be able to accept up to 10MHz)
+	settings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
+	
+	//setup pins
+	pinMode(_cs, OUTPUT);
+
+	//SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
 	SPI.begin();
 }
 
 /**
  * Closes the SPI connection
+ * SPI has an internal SPI-device counter, for each init()-call the close() function must be called exactly 1 time
  */
-void AS5048A::close()
-{
+void AS5048A::close(){
 	SPI.end();
 }
 
 /**
  * Utility function used to calculate even parity of word
  */
-byte AS5048A::spiCalcEvenParity(word value)
-{
+byte AS5048A::spiCalcEvenParity(word value){
 	byte cnt = 0;
 	byte i;
 
@@ -169,6 +170,9 @@ word AS5048A::read(word registerAddress){
 	Serial.println(command, BIN);
 #endif
 
+	//SPI - begin transaction
+	SPI.beginTransaction(settings);
+
 	//Send the command
 	digitalWrite(_cs, LOW);
 	SPI.transfer(left_byte);
@@ -180,6 +184,9 @@ word AS5048A::read(word registerAddress){
 	left_byte = SPI.transfer(0x00);
 	right_byte = SPI.transfer(0x00);
 	digitalWrite(_cs, HIGH);
+
+	//SPI - end transaction
+	SPI.endTransaction();
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read returned: ");
@@ -228,12 +235,15 @@ word AS5048A::write(word registerAddress, word data) {
 	Serial.println(command, BIN);
 #endif
 
+	//SPI - begin transaction
+	SPI.beginTransaction(settings);
+
 	//Start the write command with the target address
 	digitalWrite(_cs, LOW);
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
 	digitalWrite(_cs,HIGH);
-
+	
 	word dataToSend = 0b0000000000000000;
 	dataToSend |= data;
 
@@ -252,12 +262,15 @@ word AS5048A::write(word registerAddress, word data) {
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
 	digitalWrite(_cs,HIGH);
-
+	
 	//Send a NOP to get the new data in the register
 	digitalWrite(_cs, LOW);
 	left_byte =-SPI.transfer(0x00);
 	right_byte = SPI.transfer(0x00);
 	digitalWrite(_cs, HIGH);
+
+	//SPI - end transaction
+	SPI.endTransaction();
 
 	//Return the data, stripping the parity and error bits
 	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
