@@ -197,7 +197,9 @@ word AS5048A::read(word registerAddress){
 
 	//Check if the error bit is set
 	if (left_byte & 0x40) {
-		Serial.println("Setting Error bit");
+#ifdef AS5048A_DEBUG
+		Serial.println("Setting error bit");
+#endif
 		errorFlag = true;
 	}
 	else {
