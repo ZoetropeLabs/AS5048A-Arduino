@@ -1,6 +1,6 @@
 #ifndef as5048_h
 #define as5048_h
-#define LIBRARY_VERSION 1.0.1
+#define LIBRARY_VERSION 1.1.0
 
 #include <SPI.h>
 
