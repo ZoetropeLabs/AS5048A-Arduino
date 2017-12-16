@@ -2,7 +2,7 @@
 
 #include <AS5048A.h>
 
-#define AS5048A_DEBUG
+// #define AS5048A_DEBUG
 
 static const uint16_t AS5048A_CLEAR_ERROR_FLAG              = 0x0001;
 static const uint16_t AS5048A_PROGRAMMING_CONTROL           = 0x0003;
