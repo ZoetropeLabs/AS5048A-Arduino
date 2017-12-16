@@ -242,7 +242,7 @@ uint16_t AS5048A::read(uint16_t registerAddress){
 
 
 /**
- * TODO: make code 16-compabile so that there is not need to play arround
+ * TODO: make code 16-compabile so that there is not need to play around
  * splitting and merging bytes. Also make sure it supports ESP32.
  * Write to a register
  * Takes the 16-bit  address of the target register and the unsigned 16 bit of data
