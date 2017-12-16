@@ -1,7 +1,7 @@
 #include <AS5048A.h>
 
 
-AS5048A angleSensor(10, 0);
+AS5048A angleSensor(10);
 
 void setup()
 {

@@ -17,7 +17,7 @@ static const float AS5048A_TWICE_MAX_VALUE = 8191.0 * 2.0;
 static const float AS5048A_TWO_PI  = 2.0 * 3.14159265358979323846;
 
 /**
- * Constructor
+ * Constructor usign response delay (ESP32 and similars)
  */
 AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
 	_cs(arg_cs),
@@ -26,6 +26,15 @@ AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
 	position(0)  {
 }
 
+/**
+ * Constructor zero response delay (Arduino UNO and similars)
+ */
+AS5048A::AS5048A(uint8_t arg_cs):
+	_cs(arg_cs),
+	response_delay_millis(0),
+	errorFlag(false),
+	position(0)  {
+}
 
 /**
  * Initialiser
@@ -52,7 +61,7 @@ void AS5048A::close(){
 }
 
 /**
- * Utility function used to calculate even parity of uint16_t
+ * Utility function used to calculate even parity of an unigned 16 bit integer
  */
 uint8_t AS5048A::spiCalcEvenParity(uint16_t value){
 	uint8_t cnt = 0;
@@ -118,7 +127,7 @@ uint16_t AS5048A::getRawRotation(){
 
 /**
  * returns the value of the state register
- * @return 16 bit uint16_t containing flags
+ * @return unsigned 16 bit integer containing flags
  */
 uint16_t AS5048A::getState(){
 	return AS5048A::read(AS5048A_DIAG_AGC);
@@ -199,7 +208,9 @@ uint16_t AS5048A::read(uint16_t registerAddress){
 	SPI.transfer16(command);
 	digitalWrite(_cs,HIGH);
 
-	delay(response_delay_millis);
+	if(response_delay_millis > 0) {
+		delay(response_delay_millis);
+	}
 
 	//Now read the response
 	digitalWrite(_cs, LOW);
@@ -232,7 +243,7 @@ uint16_t AS5048A::read(uint16_t registerAddress){
 
 /**
  * TODO: make code 16-compabile so that there is not need to play arround
- * splitting bytes. Also make sure it supports ESP32.
+ * splitting and merging bytes. Also make sure it supports ESP32.
  * Write to a register
  * Takes the 16-bit  address of the target register and the unsigned 16 bit of data
  * to be written to that register
@@ -286,7 +297,9 @@ uint16_t AS5048A::write(uint16_t registerAddress, uint16_t data) {
 	SPI.transfer(right_byte);
 	digitalWrite(_cs,HIGH);
 
-	delay(response_delay_millis);
+	if(response_delay_millis > 0) {
+		delay(response_delay_millis);
+	}
 
 	//Send a NOP to get the new data in the register
 	digitalWrite(_cs, LOW);
