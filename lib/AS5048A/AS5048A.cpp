@@ -13,8 +13,8 @@ static const uint16_t AS5048A_MAGNITUDE                     = 0x3FFE;
 static const uint16_t AS5048A_ANGLE                         = 0x3FFF;
 
 static const float AS5048A_MAX_VALUE = 8191.0;
-static const float AS5048A_TWICE_MAX_VALUE = 8191.0 * 2.0;
-static const float AS5048A_TWO_PI  = 2.0 * 3.14159265358979323846;
+static const float AS5048A_TWICE_MAX_VALUE = AS5048A_MAX_VALUE * 2.0;
+static const float AS5048A_PI  = 3.14159265358979323846;
 
 /**
  * Constructor usign response delay (ESP32 and similars)
@@ -113,7 +113,7 @@ float AS5048A::getRotationInDegrees(){
 
 float AS5048A::getRotationInRadians(){
 	int32_t rotation = getRotation();
-	float degrees = AS5048A_TWO_PI * (rotation + AS5048A_MAX_VALUE) / AS5048A_TWICE_MAX_VALUE;
+	float degrees = AS5048A_PI * (rotation + AS5048A_MAX_VALUE) / AS5048A_MAX_VALUE;
 	return degrees;
 }
 
