@@ -2,25 +2,39 @@
 
 #include <AS5048A.h>
 
-//#define AS5048A_DEBUG
+// #define AS5048A_DEBUG
 
-const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001;
-const int AS5048A_PROGRAMMING_CONTROL           = 0x0003;
-const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016;
-const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017;
-const int AS5048A_DIAG_AGC                      = 0x3FFD;
-const int AS5048A_MAGNITUDE                     = 0x3FFE;
-const int AS5048A_ANGLE                         = 0x3FFF;
+static const uint16_t AS5048A_CLEAR_ERROR_FLAG              = 0x0001;
+static const uint16_t AS5048A_PROGRAMMING_CONTROL           = 0x0003;
+static const uint16_t AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016;
+static const uint16_t AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017;
+static const uint16_t AS5048A_DIAG_AGC                      = 0x3FFD;
+static const uint16_t AS5048A_MAGNITUDE                     = 0x3FFE;
+static const uint16_t AS5048A_ANGLE                         = 0x3FFF;
+
+static const float AS5048A_MAX_VALUE = 8191.0;
+static const float AS5048A_TWICE_MAX_VALUE = AS5048A_MAX_VALUE * 2.0;
+static const float AS5048A_PI  = 3.14159265358979323846;
 
 /**
- * Constructor
+ * Constructor usign response delay (ESP32 and similars)
  */
-AS5048A::AS5048A(byte arg_cs){
-	_cs = arg_cs;
-	errorFlag = false;
-	position = 0;
+AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
+	_cs(arg_cs),
+	response_delay_millis(arg_response_delay_millis),
+	errorFlag(false),
+	position(0)  {
 }
 
+/**
+ * Constructor zero response delay (Arduino UNO and similars)
+ */
+AS5048A::AS5048A(uint8_t arg_cs):
+	_cs(arg_cs),
+	response_delay_millis(0),
+	errorFlag(false),
+	position(0)  {
+}
 
 /**
  * Initialiser
@@ -29,7 +43,7 @@ AS5048A::AS5048A(byte arg_cs){
 void AS5048A::init(){
 	// 1MHz clock (AMS should be able to accept up to 10MHz)
 	settings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
-	
+
 	//setup pins
 	pinMode(_cs, OUTPUT);
 
@@ -46,13 +60,12 @@ void AS5048A::close(){
 }
 
 /**
- * Utility function used to calculate even parity of word
+ * Utility function used to calculate even parity of an unigned 16 bit integer
  */
-byte AS5048A::spiCalcEvenParity(word value){
-	byte cnt = 0;
-	byte i;
+uint8_t AS5048A::spiCalcEvenParity(uint16_t value){
+	uint8_t cnt = 0;
 
-	for (i = 0; i < 16; i++)
+	for (uint8_t i = 0; i < 16; i++)
 	{
 		if (value & 0x1)
 		{
@@ -68,14 +81,12 @@ byte AS5048A::spiCalcEvenParity(word value){
 /**
  * Get the rotation of the sensor relative to the zero position.
  *
- * @return {int} between -2^13 and 2^13
+ * @return {int32_t} between -2^13 and 2^13
  */
-int AS5048A::getRotation(){
-	word data;
-	int rotation;
+int32_t AS5048A::getRotation(){
 
-	data = AS5048A::getRawRotation();
-	rotation = (int)data - (int)position;
+	uint16_t data = AS5048A::getRawRotation();
+	int32_t rotation = (int32_t)data - (int32_t)position;
 	if(rotation > 8191) rotation = -((0x3FFF)-rotation); //more than -180
 	//if(rotation < -0x1FFF) rotation = rotation+0x3FFF;
 
@@ -83,17 +94,41 @@ int AS5048A::getRotation(){
 }
 
 /**
+ * Get the rotation of the sensor relative to the zero position in degrees.
+ *
+ * @return {float} between 0 and 360
+ */
+
+float AS5048A::getRotationInDegrees(){
+	int32_t rotation = getRotation();
+	float degrees = 360.0 * (rotation + AS5048A_MAX_VALUE) / AS5048A_TWICE_MAX_VALUE;
+	return degrees;
+}
+
+/**
+ * Get the rotation of the sensor relative to the zero position in radians.
+ *
+ * @return {float} between 0 and 2 * PI
+ */
+
+float AS5048A::getRotationInRadians(){
+	int32_t rotation = getRotation();
+	float degrees = AS5048A_PI * (rotation + AS5048A_MAX_VALUE) / AS5048A_MAX_VALUE;
+	return degrees;
+}
+
+/**
  * Returns the raw angle directly from the sensor
  */
-word AS5048A::getRawRotation(){
+uint16_t AS5048A::getRawRotation(){
 	return AS5048A::read(AS5048A_ANGLE);
 }
 
 /**
  * returns the value of the state register
- * @return 16 bit word containing flags
+ * @return unsigned 16 bit integer containing flags
  */
-word AS5048A::getState(){
+uint16_t AS5048A::getState(){
 	return AS5048A::read(AS5048A_DIAG_AGC);
 }
 
@@ -101,9 +136,7 @@ word AS5048A::getState(){
  * Print the diagnostic register of the sensor
  */
 void AS5048A::printState(){
-	word data;
-
-	data = AS5048A::getState();
+	uint16_t data = AS5048A::getState();
 	if(AS5048A::error()){
 		Serial.print("Error bit was set!");
 	}
@@ -114,54 +147,50 @@ void AS5048A::printState(){
  * Returns the value used for Automatic Gain Control (Part of diagnostic
  * register)
  */
-byte AS5048A::getGain(){
-	word data = AS5048A::getState();
-	return (byte) data & 0xFF;
+uint8_t AS5048A::getGain(){
+	uint16_t data = AS5048A::getState();
+	return (uint8_t) data & 0xFF;
 }
 
 /*
  * Get and clear the error register by reading it
  */
-word AS5048A::getErrors(){
+uint16_t AS5048A::getErrors(){
 	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG);
 }
 
 /*
  * Set the zero position
  */
-void AS5048A::setZeroPosition(word arg_position){
+void AS5048A::setZeroPosition(uint16_t arg_position){
 	position = arg_position % 0x3FFF;
 }
 
-/*
+/**
  * Returns the current zero position
  */
-word AS5048A::getZeroPosition(){
+uint16_t AS5048A::getZeroPosition(){
 	return position;
 }
 
-/*
+/**
  * Check if an error has been encountered.
  */
 bool AS5048A::error(){
 	return errorFlag;
 }
 
-/*
+/**
  * Read a register from the sensor
- * Takes the address of the register as a 16 bit word
+ * Takes the address of the register as an unsigned 16 bit
  * Returns the value of the register
  */
-word AS5048A::read(word registerAddress){
-	word command = 0b0100000000000000; // PAR=0 R/W=R
+uint16_t AS5048A::read(uint16_t registerAddress){
+	uint16_t command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
 
 	//Add a parity bit on the the MSB
-	command |= ((word)spiCalcEvenParity(command)<<15);
-
-	//Split the command into two bytes
-	byte right_byte = command & 0xFF;
-	byte left_byte = ( command >> 8 ) & 0xFF;
+	command |= ((uint16_t)spiCalcEvenParity(command)<<15);
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read (0x");
@@ -175,14 +204,16 @@ word AS5048A::read(word registerAddress){
 
 	//Send the command
 	digitalWrite(_cs, LOW);
-	SPI.transfer(left_byte);
-	SPI.transfer(right_byte);
+	SPI.transfer16(command);
 	digitalWrite(_cs,HIGH);
+
+	if(response_delay_millis > 0) {
+		delay(response_delay_millis);
+	}
 
 	//Now read the response
 	digitalWrite(_cs, LOW);
-	left_byte = SPI.transfer(0x00);
-	right_byte = SPI.transfer(0x00);
+	uint16_t response = SPI.transfer16(0x0000);
 	digitalWrite(_cs, HIGH);
 
 	//SPI - end transaction
@@ -190,13 +221,11 @@ word AS5048A::read(word registerAddress){
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read returned: ");
-	Serial.print(left_byte, BIN);
-	Serial.print(" ");
-	Serial.println(right_byte, BIN);
+	Serial.println(response, BIN);
 #endif
 
 	//Check if the error bit is set
-	if (left_byte & 0x40) {
+	if (response & 0x4000) {
 #ifdef AS5048A_DEBUG
 		Serial.println("Setting error bit");
 #endif
@@ -207,28 +236,30 @@ word AS5048A::read(word registerAddress){
 	}
 
 	//Return the data, stripping the parity and error bits
-	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
+	return response & ~0xC000;
 }
 
 
-/*
+/**
+ * TODO: make code 16-compabile so that there is not need to play around
+ * splitting and merging bytes. Also make sure it supports ESP32.
  * Write to a register
- * Takes the 16-bit  address of the target register and the 16 bit word of data
+ * Takes the 16-bit  address of the target register and the unsigned 16 bit of data
  * to be written to that register
  * Returns the value of the register after the write has been performed. This
  * is read back from the sensor to ensure a sucessful write.
  */
-word AS5048A::write(word registerAddress, word data) {
+uint16_t AS5048A::write(uint16_t registerAddress, uint16_t data) {
 
-	word command = 0b0000000000000000; // PAR=0 R/W=W
+	uint16_t command = 0b0000000000000000; // PAR=0 R/W=W
 	command |= registerAddress;
 
 	//Add a parity bit on the the MSB
-	command |= ((word)spiCalcEvenParity(command)<<15);
+	command |= ((uint16_t)spiCalcEvenParity(command)<<15);
 
 	//Split the command into two bytes
-	byte right_byte = command & 0xFF;
-	byte left_byte = ( command >> 8 ) & 0xFF;
+	uint8_t right_byte = command & 0xFF;
+	uint8_t left_byte = ( command >> 8 ) & 0xFF;
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Write (0x");
@@ -245,12 +276,12 @@ word AS5048A::write(word registerAddress, word data) {
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
 	digitalWrite(_cs,HIGH);
-	
-	word dataToSend = 0b0000000000000000;
+
+	uint16_t dataToSend = 0b0000000000000000;
 	dataToSend |= data;
 
 	//Craft another packet including the data and parity
-	dataToSend |= ((word)spiCalcEvenParity(dataToSend)<<15);
+	dataToSend |= ((uint16_t)spiCalcEvenParity(dataToSend)<<15);
 	right_byte = dataToSend & 0xFF;
 	left_byte = ( dataToSend >> 8 ) & 0xFF;
 
@@ -264,7 +295,11 @@ word AS5048A::write(word registerAddress, word data) {
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
 	digitalWrite(_cs,HIGH);
-	
+
+	if(response_delay_millis > 0) {
+		delay(response_delay_millis);
+	}
+
 	//Send a NOP to get the new data in the register
 	digitalWrite(_cs, LOW);
 	left_byte =-SPI.transfer(0x00);
