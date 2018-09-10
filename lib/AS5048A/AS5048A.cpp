@@ -153,6 +153,7 @@ bool AS5048A::error(){
  * Returns the value of the register
  */
 word AS5048A::read(word registerAddress){
+	word buffer = 0x00;
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
 
@@ -173,7 +174,7 @@ word AS5048A::read(word registerAddress){
 	//SPI - begin transaction
 	SPI.beginTransaction(settings);
 
-	//Send the command
+	/*//Send the command
 	digitalWrite(_cs, LOW);
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
@@ -183,20 +184,26 @@ word AS5048A::read(word registerAddress){
 	digitalWrite(_cs, LOW);
 	left_byte = SPI.transfer(0x00);
 	right_byte = SPI.transfer(0x00);
-	digitalWrite(_cs, HIGH);
+	digitalWrite(_cs, HIGH);*/
+	
+	digitalWrite(_cs, LOW);
+        buffer = SPI.transfer16(command);
+        digitalWrite(_cs, HIGH);
 
 	//SPI - end transaction
 	SPI.endTransaction();
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read returned: ");
-	Serial.print(left_byte, BIN);
+	//Serial.print(left_byte, BIN);
+	Serial.print(highByte(buffer), BIN);
 	Serial.print(" ");
-	Serial.println(right_byte, BIN);
+	//Serial.println(right_byte, BIN);
+	Serial.print(lowByte(buffer), BIN);
 #endif
 
 	//Check if the error bit is set
-	if (left_byte & 0x40) {
+	if (/*left_byte*/ highByte(buffer) & 0x40) {
 #ifdef AS5048A_DEBUG
 		Serial.println("Setting error bit");
 #endif
@@ -207,7 +214,7 @@ word AS5048A::read(word registerAddress){
 	}
 
 	//Return the data, stripping the parity and error bits
-	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
+	return /*(( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000*/ buffer & ~0xC000;
 }
 
 
