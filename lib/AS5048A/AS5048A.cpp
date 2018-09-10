@@ -174,7 +174,7 @@ word AS5048A::read(word registerAddress){
 	//SPI - begin transaction
 	SPI.beginTransaction(settings);
 
-	/*//Send the command
+	/* //Send the command
 	digitalWrite(_cs, LOW);
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
@@ -184,9 +184,10 @@ word AS5048A::read(word registerAddress){
 	digitalWrite(_cs, LOW);
 	left_byte = SPI.transfer(0x00);
 	right_byte = SPI.transfer(0x00);
-	digitalWrite(_cs, HIGH);*/
+	digitalWrite(_cs, HIGH); */
 	
 	digitalWrite(_cs, LOW);
+	SPI.transfer16(command);
         buffer = SPI.transfer16(command);
         digitalWrite(_cs, HIGH);
 
