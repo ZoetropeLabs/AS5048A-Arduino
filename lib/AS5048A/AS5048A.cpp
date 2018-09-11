@@ -187,7 +187,6 @@ word AS5048A::read(word registerAddress){
 	digitalWrite(_cs, HIGH); */
 	
 	digitalWrite(_cs, LOW);
-	SPI.transfer16(command);
         buffer = SPI.transfer16(command);
         digitalWrite(_cs, HIGH);
 
