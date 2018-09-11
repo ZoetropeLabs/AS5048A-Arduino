@@ -28,9 +28,17 @@ AS5048A::AS5048A(byte arg_cs){
  */
 void AS5048A::init(){
 	// 1MHz clock (AMS should be able to accept up to 10MHz)
+	//mySettting (speedMaximum, dataOrder, dataMode)
+	//speedMaximum - максимальная скорость связи. Для чипа SPI, рассчитанного на частоту до 20 МГц , используйте 20000000.
+	//dataOrder - порядок вывода даннах в/из шины SPI,  может быть LSBFIRST (наименьший разряд(бит) первый) или MSBFIRST (старший разряд первый)
+	//dataMode - устанавливает режим работы шины SPI, задавая уровень сигнала синхронизации и фазу синхронизации
+	//SPI_MODE0 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-0)
+	//SPI_MODE1 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-1) 
+	//SPI_MODE2 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-0)
+	//SPI_MODE3 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-1)
 	settings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
 	
-	//setup pins
+	//инициализация пина Slave Select если LOW ведомый взаимодействует с ведущим если HIGH ведомый игнорирует сигналы от ведущего
 	pinMode(_cs, OUTPUT);
 
 	//SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
