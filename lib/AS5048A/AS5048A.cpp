@@ -4,13 +4,13 @@
 
 //#define AS5048A_DEBUG
 
-const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001;
-const int AS5048A_PROGRAMMING_CONTROL           = 0x0003;
-const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016;
-const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017;
-const int AS5048A_DIAG_AGC                      = 0x3FFD;
-const int AS5048A_MAGNITUDE                     = 0x3FFE;
-const int AS5048A_ANGLE                         = 0x3FFF;
+const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
+const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до сжигания плавких предохранителей. После программирования проверка является обязательной. См. Процедуру программирования.
+const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение с высоким байтом
+const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая позиция остается 6 младших младших разрядов
+const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Значение автоматического регулирования усиления. 0 десятичной представляет высокое магнитное поле, 255 десятичных представляет низкое магнитное поле. (8-13)Флаги диагностики
+const int AS5048A_MAGNITUDE                     = 0x3FFE; //Значение выходной мощности CORDIC 
+const int AS5048A_ANGLE                         = 0x3FFF; //Угловое выходное значение, включая коррекцию нулевой позиции
 
 /**
  * Constructor
