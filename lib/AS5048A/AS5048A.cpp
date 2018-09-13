@@ -80,7 +80,7 @@ byte AS5048A::spiCalcEvenParity(word value){
 	* }
 	* return cnt & 0x1;
 	*/
-	
+	// Код требует проверки
 	byte OperСompare = value &  0x1;
 	do {
 		value >>= 1;
