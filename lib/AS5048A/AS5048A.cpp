@@ -82,10 +82,11 @@ byte AS5048A::spiCalcEvenParity(word value){
 	*/
 	// Код требует проверки
 	byte OperandСompare = value &  0x1;
-	do {
+	i = 0;
+	do{
 		value >>= 1;
 		OperandСompare ^= value;
-	} while (value);
+	} while ((i++) < 14);
 	return OperandСompare;
 }
 
