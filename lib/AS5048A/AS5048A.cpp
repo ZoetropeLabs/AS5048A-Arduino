@@ -86,7 +86,7 @@ byte AS5048A::spiCalcEvenParity(word value){
 		value >>= 1;
 		OperСompare ^= value;
 	} while (value);
-
+	return OperСompare;
 }
 
 
