@@ -5,7 +5,7 @@
 //#define AS5048A_DEBUG
 
 const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
-const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до сжигания плавких предохранителей. После программирования проверка является обязательной. См. Процедуру программирования.
+const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до прожига памяти. Перед программированием проверка является обязательной. См. Процедуру программирования.
 const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение с высоким байтом
 const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая позиция остается 6 младших младших разрядов
 const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Значение автоматического регулирования усиления. 0 десятичной представляет высокое магнитное поле, 255 десятичных представляет низкое магнитное поле. (8-13)Флаги диагностики
@@ -27,28 +27,27 @@ AS5048A::AS5048A(byte arg_cs){
  * Sets up the SPI interface
  */
 void AS5048A::init(){
-	// 1MHz clock (AMS should be able to accept up to 10MHz)
-	//mySettting (speedMaximum, dataOrder, dataMode)
-	//speedMaximum - максимальная скорость связи. Для чипа SPI, рассчитанного на частоту до 20 МГц , используйте 20000000.
-	//dataOrder - порядок вывода даннах в/из шины SPI,  может быть LSBFIRST (наименьший разряд(бит) первый) или MSBFIRST (старший разряд первый)
-	//dataMode - устанавливает режим работы шины SPI, задавая уровень сигнала синхронизации и фазу синхронизации
-	//SPI_MODE0 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-0)
-	//SPI_MODE1 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-1) 
-	//SPI_MODE2 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-0)
-	//SPI_MODE3 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-1)
-	//f(sample) = Min-10.2, Typ-11.25, Max-12.4. (kHz) 
-	/*Поддерживаемые режимы  I²C AS5048B:
-	• Случайное / последовательное чтение
-	• Байт / Запись страницы
-	• Стандартный: от 0 до 100 кГц, тактовая частота (ведомый режим)
-	• Быстрый режим: тактовая частота от 0 до 400 кГц (ведомый режим)
-	• Высокая скорость: от 0 до 3,4 МГц тактовой частоты (ведомый режим)*/
-		
+	/** 
+	* 1MHz clock (AMS should be able to accept up to 10MHz)
+	* mySettting (speedMaximum, dataOrder, dataMode)
+	* speedMaximum - максимальная скорость связи. Для чипа SPI, рассчитанного на частоту до 20 МГц , используйте 20000000.
+	* dataOrder - порядок вывода даннах в/из шины SPI,  может быть LSBFIRST (наименьший разряд(бит) первый) или MSBFIRST (старший разряд первый)
+	* dataMode - устанавливает режим работы шины SPI, задавая уровень сигнала синхронизации и фазу синхронизации
+	* SPI_MODE0 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-0)
+	* SPI_MODE1 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-1) 
+	* SPI_MODE2 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-0)
+	* SPI_MODE3 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-1)
+	* f(sample) = Min-10.2, Typ-11.25, Max-12.4. (kHz) 
+	* Поддерживаемые режимы  I2C AS5048B:
+	* • Случайное / последовательное чтение
+	* • Байт / Запись страницы
+	* • Стандартный: от 0 до 100 кГц, тактовая частота (ведомый режим)
+	* • Быстрый режим: тактовая частота от 0 до 400 кГц (ведомый режим)
+	* • Высокая скорость: от 0 до 3,4 МГц тактовой частоты (ведомый режим)
+	*/		
 	settings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
-	
 	//инициализация пина Slave Select если LOW ведомый взаимодействует с ведущим если HIGH ведомый игнорирует сигналы от ведущего
 	pinMode(_cs, OUTPUT);
-
 	//SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
 	SPI.begin();
 }
@@ -63,20 +62,31 @@ void AS5048A::close(){
 
 /**
  * Utility function used to calculate even parity of word
- */
+ */ 
 byte AS5048A::spiCalcEvenParity(word value){
-	byte cnt = 0;
-	byte i;
 
-	for (i = 0; i < 16; i++)
-	{
-		if (value & 0x1)
-		{
-			cnt++;
-		}
+	/**
+	* byte cnt = 0;
+	* byte i;
+
+	* for (i = 0; i < 16; i++)
+	* {
+		
+	* 	if (value & 0x1)
+	* 	{
+	* 		cnt++;
+	* 	}
+	* 	value >>= 1;
+	* }
+	* return cnt & 0x1;
+	*/
+	byte OperСompare = value;
+	value >>= 1;
+	for (byte i = 0; i < 14; i++)
+	{   
+		OperСompare = value ^ OperСompare;
 		value >>= 1;
 	}
-	return cnt & 0x1;
 }
 
 
@@ -195,7 +205,6 @@ word AS5048A::read(word registerAddress){
 	SPI.transfer(left_byte);
 	SPI.transfer(right_byte);
 	digitalWrite(_cs,HIGH);
-
 	//Now read the response
 	digitalWrite(_cs, LOW);
 	left_byte = SPI.transfer(0x00);
