@@ -10,14 +10,14 @@ const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое зн�
 const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая позиция остается 6 младших младших разрядов
 const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Значение автоматического регулирования усиления. 0 десятичной представляет высокое магнитное поле, 255 десятичных представляет низкое магнитное поле. (8-13)Флаги диагностики
 const int AS5048A_MAGNITUDE                     = 0x3FFE; //Значение выходной мощности CORDIC 
-const int AS5048A_ANGLE                         = 0x3FFF; //Угловое выходное значение, включая коррекцию нулевой позиции
+const int AS5048A_ANGLE                         = 0x3FFF; //Угловое выходное значение, включая коррекцию нулевой позиции Resolution_ADC 14-bit resolution (0.0219°/LSB)
 
 /**
  * Constructor
  */
 AS5048A::AS5048A(byte arg_cs){
 	_cs = arg_cs;
-	errorFlag = false;
+	errorFlag = false; 
 	position = 0;
 }
 
@@ -68,7 +68,6 @@ byte AS5048A::spiCalcEvenParity(word value){
 	/**
 	* byte cnt = 0;
 	* byte i;
-
 	* for (i = 0; i < 16; i++)
 	* {
 		
@@ -82,7 +81,7 @@ byte AS5048A::spiCalcEvenParity(word value){
 	*/
 	// Код требует проверки
 	byte OperandСompare = value &  0x1;
-	i = 0;
+	byte i = 0;
 	do{
 		value >>= 1;
 		OperandСompare ^= value;
@@ -114,6 +113,41 @@ int AS5048A::getRotation(){
  */
 word AS5048A::getRawRotation(){
 	return AS5048A::read(AS5048A_ANGLE);
+}
+
+/**
+ *Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП
+ */
+float RotationRawToAngle (word DiscreteCode){
+	return DiscreteCode *= 360.0 / float(AS5048A_ANGLE);
+}
+
+/**
+ * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
+ */
+void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious){
+
+	if (*AngleCurrent != *AnglePrevious){
+	
+        if ( (*AngleCurrent < 90) && (*AnglePrevious > 270) ){
+            *RotationAngle += abs(360 - abs(*AngleCurrent - *AnglePrevious));
+			}  
+		
+        if ( (*AnglePrevious < 90) && (*AngleCurrent > 270) ){
+            *RotationAngle -= abs(360 - abs(*AngleCurrent - *AnglePrevious));
+			}
+        
+        if (*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
+            *RotationAngle += abs(*AngleCurrent - *AnglePrevious);
+			} 
+            
+        if (*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
+            *RotationAngle -= abs(*AnglePrevious - *AngleCurrent);
+			}
+	}
+
+        *AnglePrevious = *AngleCurrent;
+		
 }
 
 /**
