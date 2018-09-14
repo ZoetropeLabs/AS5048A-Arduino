@@ -72,7 +72,7 @@ class AS5048A{
 	/**
 	* Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
 	*/
-	void AbsoluteAngleRotation (float *AngleCurrent, float *AnglePrevious)
+	void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious)
 
 
 	/**
