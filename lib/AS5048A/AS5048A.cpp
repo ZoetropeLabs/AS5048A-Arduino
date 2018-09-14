@@ -149,6 +149,15 @@ void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *An
         *AnglePrevious = *AngleCurrent;		
 }
 
+
+float GetAngularMinutes (float AngleAbsolute){
+
+}
+	
+float GetAngularSeconds (float AngleAbsolute){
+ return ((AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)))) * 60;
+}
+
 /**
  * returns the value of the state register
  * @return 16 bit word containing flags
