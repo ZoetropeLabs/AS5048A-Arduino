@@ -123,7 +123,7 @@ float RotationRawToAngle (word DiscreteCode){
 }
 
 /**
- * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
+ * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередаються адреса переменных 
  */
 void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious){
 
@@ -146,8 +146,7 @@ void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *An
 			}
 	}
 
-        *AnglePrevious = *AngleCurrent;
-		
+        *AnglePrevious = *AngleCurrent;		
 }
 
 /**
