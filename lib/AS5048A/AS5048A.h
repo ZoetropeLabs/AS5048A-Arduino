@@ -3,6 +3,7 @@
 #define LIBRARY_VERSION 1.0.1
 
 #include <SPI.h>
+#include <math.h>
 
 class AS5048A{
 
@@ -62,6 +63,16 @@ class AS5048A{
 	 * Returns the raw angle directly from the sensor
 	 */
 	word getRawRotation();
+	
+	/**
+	 * Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП  
+	 */
+	float RotationRawToAngle (float DiscreteCode);
+	
+	/**
+	* Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
+	*/
+	void AbsoluteAngleRotation (float *AngleCurrent, float *AnglePrevious)
 
 
 	/**
