@@ -65,28 +65,26 @@ void AS5048A::close(){
  */ 
 byte AS5048A::spiCalcEvenParity(word value){
 
-	/**
-	* byte cnt = 0;
-	* byte i;
-	* for (i = 0; i < 16; i++)
-	* {
-		
-	* 	if (value & 0x1)
-	* 	{
-	* 		cnt++;
-	* 	}
-	* 	value >>= 1;
-	* }
-	* return cnt & 0x1;
-	*/
-	// Код требует проверки
-	byte OperandСompare = value &  0x1;
+	
+	 //byte cnt = 0;
+	 //byte i;
+	 //for (i = 0; i < 16; i++)
+	 //{
+	 //   if (value & 0x1)
+	 //	{
+	 //		cnt++;
+	 //	}
+	 //	value >>= 1;
+	 //}
+	 //return cnt & 0x1;
+
+    byte operandcompare =  value;
 	byte i = 0;
 	do{
-		value >>= 1;
-		OperandСompare ^= value;
+        value >>= 1;
+		operandcompare ^= value;
 	} while ((i++) < 14);
-	return OperandСompare;
+	return operandcompare & 0x1;
 }
 
 
@@ -150,12 +148,13 @@ void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *An
 }
 
 
-float GetAngularMinutes (float AngleAbsolute){
-
+float AS5048A::GetAngularMinutes (float AngleAbsolute){
+    return ( AngleAbsolute - int(AngleAbsolute) ) *60;
 }
-	
-float GetAngularSeconds (float AngleAbsolute){
- return ((AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)))) * 60;
+
+float AS5048A::GetAngularSeconds (float AngleAbsolute){
+
+    return (AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)) ) * 60;
 }
 
 /**
@@ -163,7 +162,7 @@ float GetAngularSeconds (float AngleAbsolute){
  * @return 16 bit word containing flags
  */
 word AS5048A::getState(){
-	return AS5048A::read(AS5048A_DIAG_AGC);
+	return read(AS5048A_DIAG_AGC);
 }
 
 /**
@@ -178,6 +177,7 @@ void AS5048A::printState(){
 	}
 	Serial.println(data, BIN);
 }
+
 
 /**
  * Returns the value used for Automatic Gain Control (Part of diagnostic
@@ -242,21 +242,11 @@ word AS5048A::read(word registerAddress){
 
 	//SPI - begin transaction
 	SPI.beginTransaction(settings);
-
-	/* //Send the command
-	digitalWrite(_cs, LOW);
-	SPI.transfer(left_byte);
-	SPI.transfer(right_byte);
-	digitalWrite(_cs,HIGH);
-	//Now read the response
-	digitalWrite(_cs, LOW);
-	left_byte = SPI.transfer(0x00);
-	right_byte = SPI.transfer(0x00);
-	digitalWrite(_cs, HIGH); */
 	
 	digitalWrite(_cs, LOW);
-        buffer = SPI.transfer16(command);
-        digitalWrite(_cs, HIGH);
+    //Send the command
+    buffer = SPI.transfer16(command);
+    digitalWrite(_cs, HIGH);
 
 	//SPI - end transaction
 	SPI.endTransaction();
@@ -342,7 +332,7 @@ word AS5048A::write(word registerAddress, word data) {
 	
 	//Send a NOP to get the new data in the register
 	digitalWrite(_cs, LOW);
-	left_byte =-SPI.transfer(0x00);
+	left_byte =-SPI.transfer(0x00); // - ?
 	right_byte = SPI.transfer(0x00);
 	digitalWrite(_cs, HIGH);
 
