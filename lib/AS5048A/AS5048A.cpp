@@ -76,10 +76,10 @@ byte AS5048A::spiCalcEvenParity(word value){
 	//	value >>= 1;
 	//}
 	//return cnt & 0x1;
-    byte operand_compare =  value;
+	byte operand_compare =  value;
 	byte i = 0;
 	do{
-        value >>= 1;
+		value >>= 1;
 		operand_compare ^= value;
 	} while ((i++) < 14);
 	return operand_compare & 0x1;
