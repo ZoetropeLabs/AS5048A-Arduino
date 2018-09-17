@@ -1,6 +1,7 @@
 #include "Arduino.h"
 
 #include <AS5048A.h>
+#include <stdlib.h> 
 
 //#define AS5048A_DEBUG
 
@@ -64,27 +65,24 @@ void AS5048A::close(){
  * Utility function used to calculate even parity of word
  */ 
 byte AS5048A::spiCalcEvenParity(word value){
-
-	
-	 //byte cnt = 0;
-	 //byte i;
-	 //for (i = 0; i < 16; i++)
-	 //{
-	 //   if (value & 0x1)
-	 //	{
-	 //		cnt++;
-	 //	}
-	 //	value >>= 1;
-	 //}
-	 //return cnt & 0x1;
-
-    byte operandcompare =  value;
+	//byte cnt = 0;
+	//byte i;
+	//for (i = 0; i < 16; i++)
+	//{
+	//   if (value & 0x1)
+	//	{
+	//		cnt++;
+	//	}
+	//	value >>= 1;
+	//}
+	//return cnt & 0x1;
+    byte operand_compare =  value;
 	byte i = 0;
 	do{
         value >>= 1;
-		operandcompare ^= value;
+		operand_compare ^= value;
 	} while ((i++) < 14);
-	return operandcompare & 0x1;
+	return operand_compare & 0x1;
 }
 
 
@@ -97,12 +95,10 @@ byte AS5048A::spiCalcEvenParity(word value){
 int AS5048A::getRotation(){
 	word data;
 	int rotation;
-
 	data = AS5048A::getRawRotation();
 	rotation = (int)data - (int)position;
 	if(rotation > 8191) rotation = -((0x3FFF)-rotation); //more than -180
 	//if(rotation < -0x1FFF) rotation = rotation+0x3FFF;
-
 	return rotation;
 }
 
@@ -129,32 +125,31 @@ void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *An
 	
         if ( (*AngleCurrent < 90) && (*AnglePrevious > 270) ){
             *RotationAngle += abs(360 - abs(*AngleCurrent - *AnglePrevious));
-			}  
+		}  
 		
         if ( (*AnglePrevious < 90) && (*AngleCurrent > 270) ){
             *RotationAngle -= abs(360 - abs(*AngleCurrent - *AnglePrevious));
-			}
+		}
         
         if (*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
             *RotationAngle += abs(*AngleCurrent - *AnglePrevious);
-			} 
+		} 
             
         if (*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
             *RotationAngle -= abs(*AnglePrevious - *AngleCurrent);
-			}
+		}
 	}
 
-        *AnglePrevious = *AngleCurrent;		
+    *AnglePrevious = *AngleCurrent;		
 }
 
 
 float AS5048A::GetAngularMinutes (float AngleAbsolute){
-    return ( AngleAbsolute - int(AngleAbsolute) ) *60;
+	return ( AngleAbsolute - int(AngleAbsolute) ) *60;
 }
 
 float AS5048A::GetAngularSeconds (float AngleAbsolute){
-
-    return (AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)) ) * 60;
+	return (AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)) ) * 60;
 }
 
 /**
@@ -170,7 +165,6 @@ word AS5048A::getState(){
  */
 void AS5048A::printState(){
 	word data;
-
 	data = AS5048A::getState();
 	if(AS5048A::error()){
 		Serial.print("Error bit was set!");
@@ -209,6 +203,11 @@ word AS5048A::getZeroPosition(){
 	return position;
 }
 
+//функция для сортировки по возрастанию
+word AS5048A::SortingUp (const void * a, const void * b){
+	return ( *(word*)a - *(int*)b );
+}
+
 /*
  * Check if an error has been encountered.
  */
@@ -221,17 +220,13 @@ bool AS5048A::error(){
  * Takes the address of the register as a 16 bit word
  * Returns the value of the register
  */
-word AS5048A::read(word registerAddress){
+word AS5048A::read(word registerAddress, bool MeanMedian){
 	word buffer = 0x00;
+	word array_buffer [15];
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
-
 	//Add a parity bit on the the MSB
 	command |= ((word)spiCalcEvenParity(command)<<15);
-
-	//Split the command into two bytes
-	byte right_byte = command & 0xFF;
-	byte left_byte = ( command >> 8 ) & 0xFF;
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read (0x");
@@ -243,13 +238,24 @@ word AS5048A::read(word registerAddress){
 	//SPI - begin transaction
 	SPI.beginTransaction(settings);
 	
+	//Send the command and Now read the response
 	digitalWrite(_cs, LOW);
-    //Send the command
-    buffer = SPI.transfer16(command);
+	if (MeanMedian == true){
+		for (i = 0; i < 15; i++){
+			array_buffer [i] = SPI.transfer16(command);
+		}
+	}else{
+		buffer = SPI.transfer16(command);
+	}	
     digitalWrite(_cs, HIGH);
 
 	//SPI - end transaction
 	SPI.endTransaction();
+	
+	if (MeanMedian == true){
+		qsort (array_buffer, 15, sizeof(word), AS5048A::SortingUp);
+		buffer = (array_buffer[7] + array_buffer[8])/2;
+	}
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read returned: ");
@@ -266,8 +272,7 @@ word AS5048A::read(word registerAddress){
 		Serial.println("Setting error bit");
 #endif
 		errorFlag = true;
-	}
-	else {
+	}else {
 		errorFlag = false;
 	}
 
@@ -341,4 +346,3 @@ word AS5048A::write(word registerAddress, word data) {
 
 	//Return the data, stripping the parity and error bits
 	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
-}
