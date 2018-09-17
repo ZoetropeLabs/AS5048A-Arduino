@@ -111,14 +111,14 @@ word AS5048A::getRawRotation(bool EnableMedianValue = false){
 /**
  *Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП
  */
-float RotationRawToAngle (word DiscreteCode){
+float AS5048A::RotationRawToAngle (word DiscreteCode){
 	return DiscreteCode * (360.0 / float(AS5048A_ANGLE));
 }
 
 /**
  * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередаються адреса переменных 
  */
-void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious){
+void AS5048A::AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious){
 
 	if (*AngleCurrent != *AnglePrevious){
 	
@@ -164,7 +164,7 @@ float AS5048A::GetAngularSeconds (float AngleAbsolute){
 *(PI * NormalModule) - Шаг торцовый
 *20 - Угол наклона зуба
 */ 
-float LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth){	 
+float AS5048A::LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth){	 
 	return (WheelRotationAngle * ( (PI * NormalModule) / cos(20) ) * NumberGearTeeth) / 360:
 }
 
