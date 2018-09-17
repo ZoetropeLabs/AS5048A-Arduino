@@ -104,15 +104,15 @@ int AS5048A::getRotation(){
 /**
  * Returns the raw angle directly from the sensor
  */
-word AS5048A::getRawRotation(){
-	return AS5048A::read(AS5048A_ANGLE);
+word AS5048A::getRawRotation(bool EnableMedianValue = false){
+	return AS5048A::read(AS5048A_ANGLE, EnableMedianValue);
 }
 
 /**
  *Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП
  */
 float RotationRawToAngle (word DiscreteCode){
-	return DiscreteCode *= 360.0 / float(AS5048A_ANGLE);
+	return DiscreteCode * (360.0 / float(AS5048A_ANGLE));
 }
 
 /**
@@ -219,7 +219,7 @@ bool AS5048A::error(){
  * Takes the address of the register as a 16 bit word
  * Returns the value of the register
  */
-word AS5048A::read(word registerAddress, bool MeanMedian){
+word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	word buffer = 0x00;
 	word array_buffer [15];
 	word command = 0b0100000000000000; // PAR=0 R/W=R
@@ -239,7 +239,7 @@ word AS5048A::read(word registerAddress, bool MeanMedian){
 	
 	//Send the command and Now read the response
 	digitalWrite(_cs, LOW);
-	if (MeanMedian == true){
+	if (MeaValueMedian == true){
 		for (i = 0; i < 15; i++){
 			array_buffer [i] = SPI.transfer16(command);
 		}
@@ -251,7 +251,7 @@ word AS5048A::read(word registerAddress, bool MeanMedian){
 	//SPI - end transaction
 	SPI.endTransaction();
 	
-	if (MeanMedian == true){
+	if (MeaValueMedian == true){
 		qsort (array_buffer, 15, sizeof(word), AS5048A::SortingUp);
 		buffer = (array_buffer[7] + array_buffer[8])/2;
 	}
