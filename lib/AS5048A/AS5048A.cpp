@@ -104,7 +104,7 @@ int AS5048A::getRotation(){
 /**
  * Returns the raw angle directly from the sensor
  */
-word AS5048A::getRawRotation(bool EnableMedianValue = false){
+word AS5048A::getRawRotation(bool EnableMedianValue){
 	return AS5048A::read(AS5048A_ANGLE, EnableMedianValue);
 }
 
@@ -165,7 +165,7 @@ float AS5048A::GetAngularSeconds (float AngleAbsolute){
 *20 - Угол наклона зуба
 */ 
 float AS5048A::LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth){	 
-	return (WheelRotationAngle * ( (PI * NormalModule) / cos(20) ) * NumberGearTeeth) / 360:
+	return (WheelRotationAngle * ( (PI * NormalModule) / cos(20) ) * NumberGearTeeth) / 360;
 }
 
 /**
@@ -220,9 +220,9 @@ word AS5048A::getZeroPosition(){
 }
 
 //функция для сортировки по возрастанию
-word AS5048A::SortingUp (const void * a, const void * b){
-	return ( *(word*)a - *(int*)b );
-}
+//word AS5048A::compare (const void * a, const void * b){
+//	return ( *(word*)a - *(word*)b );
+//}
 
 /*
  * Check if an error has been encountered.
@@ -238,7 +238,8 @@ bool AS5048A::error(){
  */
 word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	word buffer = 0x00;
-	word array_buffer [15];
+	word array_buffer [16];
+	
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
 	//Add a parity bit on the the MSB
@@ -257,8 +258,8 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	//Send the command and Now read the response
 	digitalWrite(_cs, LOW);
 	if (MeaValueMedian == true){
-		for (i = 0; i < 15; i++){
-			array_buffer [i] = SPI.transfer16(command);
+		for ( byte i = 0; i < 16; i++){
+			array_buffer[i] = SPI.transfer16(command);
 		}
 	}else{
 		buffer = SPI.transfer16(command);
@@ -269,7 +270,7 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	SPI.endTransaction();
 	
 	if (MeaValueMedian == true){
-		qsort (array_buffer, 15, sizeof(word), AS5048A::SortingUp);
+		qsort (array_buffer, 16, sizeof(word),AS5048A::compare);
 		buffer = (array_buffer[7] + array_buffer[8])/2;
 	}
 
@@ -362,3 +363,4 @@ word AS5048A::write(word registerAddress, word data) {
 
 	//Return the data, stripping the parity and error bits
 	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
+}

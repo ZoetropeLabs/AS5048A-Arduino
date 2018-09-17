@@ -4,7 +4,9 @@
 
 #include <SPI.h>
 #include <math.h>
-#include <stdlib.h>
+
+#include <stdio.h> 
+#include <stdlib.h>   
 
 class AS5048A{
 
@@ -45,7 +47,7 @@ class AS5048A{
 	 * после 16 тактов CLK циклов, CSn необходимо вернуть к высокому состоянию, чтобы сбросить
 	   некоторые части ядра интерфейса.
 	 */
-	word read(word registerAddress, bool MeaValueMedian)
+	word read(word registerAddress, bool MeaValueMedian = false);
 
 	/**
 	 * Write to a register
@@ -71,7 +73,7 @@ class AS5048A{
 	/**
 	 * Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП  
 	 */
-	float RotationRawToAngle (float DiscreteCode);
+	float RotationRawToAngle (word DiscreteCode);
 
 	/**
 	* Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
@@ -81,7 +83,7 @@ class AS5048A{
 	/**
 	*функция для сортировки по возрастанию
 	*/
-	word SortingUp (const void * a, const void * b);
+	word compare (const void * a, const void * b);
 
 	/**
 	*возвращает минуты угла
