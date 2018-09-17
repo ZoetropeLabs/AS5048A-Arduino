@@ -41,8 +41,11 @@ class AS5048A{
 	 * Read a register from the sensor
 	 * Takes the address of the register as a 16 bit word
 	 * Returns the value of the register
+	 * MeaValueMedian разрешает найти медианое среднее значение из 16 измерений так как
+	 * после 16 тактов CLK циклов, CSn необходимо вернуть к высокому состоянию, чтобы сбросить
+	   некоторые части ядра интерфейса.
 	 */
-	word read(word registerAddress);
+	word AS5048A::read(word registerAddress, bool MeaValueMedian)
 
 	/**
 	 * Write to a register
@@ -63,7 +66,7 @@ class AS5048A{
 	/**
 	 * Returns the raw angle directly from the sensor
 	 */
-	word getRawRotation();
+	word AS5048A::getRawRotation(bool EnableMedianValue = false);
 
 	/**
 	 * Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП  
