@@ -76,7 +76,7 @@ class AS5048A{
 	/**
 	* Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
 	*/
-	void AbsoluteAngleRotation (float *AngleAbsolute, float *AngleCurrent, float *AnglePrevious);
+	void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious);
 
 	/**
 	*функция для сортировки по возрастанию
@@ -92,6 +92,16 @@ class AS5048A{
 	*возвращает секунды угла
 	*/
 	float GetAngularSeconds (float AngleAbsolute);
+	
+	/**
+	*возвращает перемещение прямозубой зубчатой рекйки в мм
+	*WheelRotationAngle - Угол поворота колеса
+	*NormalModule - Модуль нормальный
+	*NumberGearTeeth - Число зубьев колеса или число заходов червяка
+	*(PI * NormalModule) - Шаг торцовый
+	*20 - Угол наклона зуба
+	*/ 
+	float LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth);
 
 	/**
 	 * returns the value of the state register
