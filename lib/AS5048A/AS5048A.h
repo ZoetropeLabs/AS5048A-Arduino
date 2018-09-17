@@ -74,9 +74,19 @@ class AS5048A{
 	*/
 	void AbsoluteAngleRotation (float *AngleAbsolute, float *AngleCurrent, float *AnglePrevious);
 	
+	/**
+	*функция для сортировки по возрастанию
+	*/
+	word SortingUp (const void * a, const void * b);
 	
+	/**
+	*возвращает минуты угла
+	*/
 	float GetAngularMinutes (float AngleAbsolute);
 	
+	/**
+	*возвращает секунды угла
+	*/
 	float GetAngularSeconds (float AngleAbsolute);
 	
 	
