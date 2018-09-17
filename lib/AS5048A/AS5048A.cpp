@@ -142,13 +142,30 @@ void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *An
     *AnglePrevious = *AngleCurrent;		
 }
 
-
+/**
+*возвращает минуты угла
+*/
 float AS5048A::GetAngularMinutes (float AngleAbsolute){
 	return ( AngleAbsolute - int(AngleAbsolute) ) *60;
 }
 
+/**
+*возвращает секунды угла
+*/
 float AS5048A::GetAngularSeconds (float AngleAbsolute){
 	return (AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)) ) * 60;
+}
+
+/**
+*возвращает перемещение прямозубой зубчатой рекйки в мм
+*WheelRotationAngle - Угол поворота колеса
+*NormalModule - Модуль нормальный
+*NumberGearTeeth - Число зубьев колеса или число заходов червяка
+*(PI * NormalModule) - Шаг торцовый
+*20 - Угол наклона зуба
+*/ 
+float LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth){	 
+	return (WheelRotationAngle * ( (PI * NormalModule) / cos(20) ) * NumberGearTeeth) / 360:
 }
 
 /**
