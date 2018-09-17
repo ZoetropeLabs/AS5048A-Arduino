@@ -4,6 +4,7 @@
 
 #include <SPI.h>
 #include <math.h>
+#include <stdlib.h>
 
 class AS5048A{
 
@@ -15,9 +16,9 @@ class AS5048A{
 	byte clk;
 	word position;
 	word transaction(word data);
-	
+
 	SPISettings settings;
-	
+
 	public:
 
 	/**
@@ -36,14 +37,14 @@ class AS5048A{
 	 */
 	void close();
 
-	/*
+	/**
 	 * Read a register from the sensor
 	 * Takes the address of the register as a 16 bit word
 	 * Returns the value of the register
 	 */
 	word read(word registerAddress);
 
-	/*
+	/**
 	 * Write to a register
 	 * Takes the 16-bit  address of the target register and the 16 bit word of data
 	 * to be written to that register
@@ -63,34 +64,31 @@ class AS5048A{
 	 * Returns the raw angle directly from the sensor
 	 */
 	word getRawRotation();
-	
+
 	/**
 	 * Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП  
 	 */
 	float RotationRawToAngle (float DiscreteCode);
-	
+
 	/**
 	* Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
 	*/
 	void AbsoluteAngleRotation (float *AngleAbsolute, float *AngleCurrent, float *AnglePrevious);
-	
+
 	/**
 	*функция для сортировки по возрастанию
 	*/
 	word SortingUp (const void * a, const void * b);
-	
+
 	/**
 	*возвращает минуты угла
 	*/
 	float GetAngularMinutes (float AngleAbsolute);
-	
+
 	/**
 	*возвращает секунды угла
 	*/
 	float GetAngularSeconds (float AngleAbsolute);
-	
-	
-
 
 	/**
 	 * returns the value of the state register
@@ -109,28 +107,32 @@ class AS5048A{
 	 */
 	byte getGain();
 
-	/*
+	/**
 	 * Get and clear the error register by reading it
 	 */
 	word getErrors();
 
-	/*
+	/**
 	 * Set the zero position
 	 */
 	void setZeroPosition(word arg_position);
 
-	/*
+	/**
 	 * Returns the current zero position
 	 */
 	word getZeroPosition();
 
-	/*
+	/**
 	 * Check if an error has been encountered.
 	 */
 	bool error();
 
+	
+	
 	private:
-
+	/**
+	 * возвращает бит чётности
+	 */
 	byte spiCalcEvenParity(word);
 };
 #endif
