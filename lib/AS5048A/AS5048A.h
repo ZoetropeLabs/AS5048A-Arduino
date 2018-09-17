@@ -45,7 +45,7 @@ class AS5048A{
 	 * после 16 тактов CLK циклов, CSn необходимо вернуть к высокому состоянию, чтобы сбросить
 	   некоторые части ядра интерфейса.
 	 */
-	word AS5048A::read(word registerAddress, bool MeaValueMedian)
+	word read(word registerAddress, bool MeaValueMedian)
 
 	/**
 	 * Write to a register
@@ -66,7 +66,7 @@ class AS5048A{
 	/**
 	 * Returns the raw angle directly from the sensor
 	 */
-	word AS5048A::getRawRotation(bool EnableMedianValue = false);
+	word getRawRotation(bool EnableMedianValue = false);
 
 	/**
 	 * Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП  
