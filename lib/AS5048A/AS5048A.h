@@ -83,7 +83,7 @@ class AS5048A{
 	/**
 	*функция для сортировки по возрастанию
 	*/
-	word compare (const void * a, const void * b);
+	void quickSort(int arr[], int left, int right);
 
 	/**
 	*возвращает минуты угла
