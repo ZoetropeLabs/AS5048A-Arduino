@@ -198,40 +198,65 @@ byte AS5048A::getGain(){
 	return (byte) data & 0xFF;
 }
 
-/*
+/**
  * Get and clear the error register by reading it
  */
 word AS5048A::getErrors(){
 	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG);
 }
 
-/*
+/**
  * Set the zero position
  */
 void AS5048A::setZeroPosition(word arg_position){
 	position = arg_position % 0x3FFF;
 }
 
-/*
+/**
  * Returns the current zero position
  */
 word AS5048A::getZeroPosition(){
 	return position;
 }
 
-//функция для сортировки по возрастанию
-//word AS5048A::compare (const void * a, const void * b){
-//	return ( *(word*)a - *(word*)b );
-//}
+/**
+ *функция для сортировки по возрастанию
+ */
+void AS5048A::quickSort(word arr[], int left, int right) { 
+	int i = left, j = right; 
+	int tmp; 
+	word pivot = arr[(left + right) / 2]; 
 
-/*
+	/* partition */ 
+	while (i <= j) { 
+		while (arr[i] < pivot) 
+			i++; 
+		while (arr[j] > pivot) 
+			j--; 
+		if (i <= j) { 
+			tmp = arr[i]; 
+			arr[i] = arr[j]; 
+			arr[j] = tmp; 
+			i++; 
+			j--; 
+		} 
+	} 
+
+	/* recursion */ 
+	if (left < j) 
+		quickSort(arr, left, j); 
+	if (i < right) 
+		quickSort(arr, i, right); 
+}
+
+/**
  * Check if an error has been encountered.
  */
 bool AS5048A::error(){
 	return errorFlag;
 }
 
-/*
+/**
  * Read a register from the sensor
  * Takes the address of the register as a 16 bit word
  * Returns the value of the register
@@ -270,7 +295,7 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	SPI.endTransaction();
 	
 	if (MeaValueMedian == true){
-		qsort (array_buffer, 16, sizeof(word),AS5048A::compare);
+		AS5048A::quickSort(array_buffer, 0, 15)
 		buffer = (array_buffer[7] + array_buffer[8])/2;
 	}
 
@@ -298,7 +323,7 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 }
 
 
-/*
+/**
  * Write to a register
  * Takes the 16-bit  address of the target register and the 16 bit word of data
  * to be written to that register
