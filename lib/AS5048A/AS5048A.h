@@ -83,7 +83,7 @@ class AS5048A{
 	/**
 	*функция для сортировки по возрастанию
 	*/
-	void quickSort(int arr[], int left, int right);
+	void quickSort(word *arr, int left, int right);
 
 	/**
 	*возвращает минуты угла
@@ -103,7 +103,7 @@ class AS5048A{
 	*(PI * NormalModule) - Шаг торцовый
 	*20 - Угол наклона зуба
 	*/ 
-	float LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth);
+	float LinearDisplacementRack ( float WheelRotationAngle, float NormalModule, float NumberGearTeeth);
 
 	/**
 	 * returns the value of the state register

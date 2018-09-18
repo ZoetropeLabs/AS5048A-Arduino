@@ -222,7 +222,7 @@ word AS5048A::getZeroPosition(){
 /**
  *функция для сортировки по возрастанию
  */
-void AS5048A::quickSort(word arr[], int left, int right) { 
+void AS5048A::quickSort(word *arr, int left, int right) { 
 	int i = left, j = right; 
 	int tmp; 
 	word pivot = arr[(left + right) / 2]; 
@@ -281,22 +281,31 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	SPI.beginTransaction(settings);
 	
 	//Send the command and Now read the response
-	digitalWrite(_cs, LOW);
+	
 	if (MeaValueMedian == true){
 		for ( byte i = 0; i < 16; i++){
+			digitalWrite(_cs, LOW);
 			array_buffer[i] = SPI.transfer16(command);
+			digitalWrite(_cs, HIGH);
 		}
 	}else{
+		digitalWrite(_cs, LOW);
 		buffer = SPI.transfer16(command);
+		digitalWrite(_cs, HIGH);
 	}	
-    digitalWrite(_cs, HIGH);
+    
 
 	//SPI - end transaction
 	SPI.endTransaction();
 	
 	if (MeaValueMedian == true){
-		AS5048A::quickSort(array_buffer, 0, 15)
+		quickSort(array_buffer, 0, 15);
+		for ( byte i = 0; i < 16; i++){
+			Serial.println(array_buffer[i],DEC);	
+		}
 		buffer = (array_buffer[7] + array_buffer[8])/2;
+		//Serial.println(" ");
+		//Serial.println(buffer,DEC);
 	}
 
 #ifdef AS5048A_DEBUG
