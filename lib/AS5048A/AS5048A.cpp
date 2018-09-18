@@ -262,8 +262,9 @@ bool AS5048A::error(){
  * Returns the value of the register
  */
 word AS5048A::read(word registerAddress, bool MeaValueMedian){
+	byte i;
 	word buffer = 0x00;
-	word array_buffer [16];
+	word array_buffer [17];
 	
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
@@ -283,7 +284,7 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	//Send the command and Now read the response
 	
 	if (MeaValueMedian == true){
-		for ( byte i = 0; i < 16; i++){
+		for ( i = 0; i < 17; i++){
 			digitalWrite(_cs, LOW);
 			array_buffer[i] = SPI.transfer16(command);
 			digitalWrite(_cs, HIGH);
@@ -299,13 +300,8 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	SPI.endTransaction();
 	
 	if (MeaValueMedian == true){
-		quickSort(array_buffer, 0, 15);
-		for ( byte i = 0; i < 16; i++){
-			Serial.println(array_buffer[i],DEC);	
-		}
+		quickSort(array_buffer, 0, 16);
 		buffer = (array_buffer[7] + array_buffer[8])/2;
-		//Serial.println(" ");
-		//Serial.println(buffer,DEC);
 	}
 
 #ifdef AS5048A_DEBUG
