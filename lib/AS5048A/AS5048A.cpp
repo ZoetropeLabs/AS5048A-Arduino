@@ -262,7 +262,6 @@ bool AS5048A::error(){
  * Returns the value of the register
  */
 word AS5048A::read(word registerAddress, bool MeaValueMedian){
-	byte i=0, ind=0;
 	word buffer = 0x00;
 	word array_buffer [];
 	
@@ -284,15 +283,10 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	//Send the command and Now read the response
 	
 	if (MeaValueMedian == true){
-		for ( i; i < 17; i++){
+		for ( byte i = 0; i < 17; i++){
 			digitalWrite(_cs, LOW);
-			buffer = SPI.transfer16(command);
+			buffer *= SPI.transfer16(command) & ~0xC000;
 			digitalWrite(_cs, HIGH);
-			//Проверка бита чётности если совпадение 
-			if (buffer & ((word)spiCalcEvenParity(buffer)<<16)){
-				array_buffer[ind] = buffer;
-				ind++
-			}
 		}
 	}else{
 		digitalWrite(_cs, LOW);
@@ -305,8 +299,9 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	SPI.endTransaction();
 	
 	if (MeaValueMedian == true){
-		quickSort(array_buffer, 0, ind);
-		buffer = (array_buffer[ind / 2] + array_buffer[8])/2;
+		//quickSort(array_buffer, 0, 16);
+		//buffer = (array_buffer[7] + array_buffer[8])/2;
+		pow(buffer, 1/16);
 	}
 
 #ifdef AS5048A_DEBUG
