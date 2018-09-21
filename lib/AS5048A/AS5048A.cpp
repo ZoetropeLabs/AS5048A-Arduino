@@ -66,7 +66,7 @@ void AS5048A::close(){
 byte AS5048A::spiCalcEvenParity(word value){
 	//byte cnt = 0;
 	//byte i;
-	//for (i = 0; i < 16; i++)
+	//for (i = 0; i < 15; i++)
 	//{
 	//   if (value & 0x1)
 	//	{
@@ -75,11 +75,11 @@ byte AS5048A::spiCalcEvenParity(word value){
 	//	value >>= 1;
 	//}
 	//return cnt & 0x1;
-	byte operand_compare =  value;
-	byte i = 0;
+	
+	byte operand_compare =  bitRead(value,0);
+	byte i = 1;
 	do{
-		value >>= 1;
-		operand_compare ^= value;
+		operand_compare ^= bitRead(value,i);
 	} while ((i++) < 14);
 	return operand_compare & 0x1;
 }
@@ -263,8 +263,7 @@ bool AS5048A::error(){
  */
 word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	word buffer = 0x00;
-	word array_buffer [];
-	
+	word array_buffer[16];
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	command = command | registerAddress;
 	//Add a parity bit on the the MSB
@@ -281,11 +280,10 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	SPI.beginTransaction(settings);
 	
 	//Send the command and Now read the response
-	
 	if (MeaValueMedian == true){
-		for ( byte i = 0; i < 17; i++){
+		for ( byte i = 0; i < 16; i++){
 			digitalWrite(_cs, LOW);
-			buffer *= SPI.transfer16(command) & ~0xC000;
+			array_buffer[i] = SPI.transfer16(command) & ~0xC000;
 			digitalWrite(_cs, HIGH);
 		}
 	}else{
@@ -293,15 +291,14 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 		buffer = SPI.transfer16(command);
 		digitalWrite(_cs, HIGH);
 	}	
-    
 
 	//SPI - end transaction
 	SPI.endTransaction();
 	
 	if (MeaValueMedian == true){
-		//quickSort(array_buffer, 0, 16);
-		//buffer = (array_buffer[7] + array_buffer[8])/2;
-		pow(buffer, 1/16);
+		quickSort(array_buffer, 0, 15);	
+		buffer = (array_buffer[8] + array_buffer[9])/2;	
+		Serial.println(buffer, BIN);		
 	}
 
 #ifdef AS5048A_DEBUG
@@ -393,4 +390,4 @@ word AS5048A::write(word registerAddress, word data) {
 
 	//Return the data, stripping the parity and error bits
 	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
-}
+	}
