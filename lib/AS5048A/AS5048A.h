@@ -3,10 +3,10 @@
 #define LIBRARY_VERSION 1.0.1
 
 #include <SPI.h>
-#include <math.h>
+//#include <math.h>
 
-#include <stdio.h> 
-#include <stdlib.h>   
+//#include <stdio.h> 
+//#include <stdlib.h>   
 
 class AS5048A{
 
