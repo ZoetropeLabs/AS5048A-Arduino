@@ -4,13 +4,13 @@
 
 //#define AS5048A_DEBUG
 
-const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Р РµРіРёСЃС‚СЂ РѕС€РёР±РѕРє. Р’СЃРµ РѕС€РёР±РєРё РѕС‡РёС‰Р°СЋС‚СЃСЏ РїСѓС‚РµРј РґРѕСЃС‚СѓРїР°.
-const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Р РµРіРёСЃС‚СЂ СѓРїСЂР°РІР»РµРЅРёСЏ РїСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёРµРј. РџСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёРµ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РІРєР»СЋС‡РµРЅРѕ РґРѕ РїСЂРѕР¶РёРіР° РїР°РјСЏС‚Рё. РџРµСЂРµРґ РїСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёРµРј РїСЂРѕРІРµСЂРєР° СЏРІР»СЏРµС‚СЃСЏ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕР№. РЎРј. РџСЂРѕС†РµРґСѓСЂСѓ РїСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёСЏ.
-const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //РќСѓР»РµРІРѕРµ Р·РЅР°С‡РµРЅРёРµ СЃ РІС‹СЃРѕРєРёРј Р±Р°Р№С‚РѕРј
-const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //РќСѓР»РµРІР°СЏ РїРѕР·РёС†РёСЏ РѕСЃС‚Р°РµС‚СЃСЏ 6 РјР»Р°РґС€РёС… РјР»Р°РґС€РёС… СЂР°Р·СЂСЏРґРѕРІ
-const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Р—РЅР°С‡РµРЅРёРµ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРіРѕ СЂРµРіСѓР»РёСЂРѕРІР°РЅРёСЏ СѓСЃРёР»РµРЅРёСЏ. 0 РґРµСЃСЏС‚РёС‡РЅРѕР№ РїСЂРµРґСЃС‚Р°РІР»СЏРµС‚ РІС‹СЃРѕРєРѕРµ РјР°РіРЅРёС‚РЅРѕРµ РїРѕР»Рµ, 255 РґРµСЃСЏС‚РёС‡РЅС‹С… РїСЂРµРґСЃС‚Р°РІР»СЏРµС‚ РЅРёР·РєРѕРµ РјР°РіРЅРёС‚РЅРѕРµ РїРѕР»Рµ. (8-13)Р¤Р»Р°РіРё РґРёР°РіРЅРѕСЃС‚РёРєРё
-const int AS5048A_MAGNITUDE                     = 0x3FFE; //Р—РЅР°С‡РµРЅРёРµ РІС‹С…РѕРґРЅРѕР№ РјРѕС‰РЅРѕСЃС‚Рё CORDIC 
-const int AS5048A_ANGLE                         = 0x3FFF; //РЈРіР»РѕРІРѕРµ РІС‹С…РѕРґРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ, РІРєР»СЋС‡Р°СЏ РєРѕСЂСЂРµРєС†РёСЋ РЅСѓР»РµРІРѕР№ РїРѕР·РёС†РёРё Resolution_ADC 14-bit resolution (0.0219В°/LSB)
+const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
+const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до прожига памяти. Перед программированием проверка является обязательной. См. Процедуру программирования.
+const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение с высоким байтом
+const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая позиция остается 6 младших младших разрядов
+const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Значение автоматического регулирования усиления. 0 десятичной представляет высокое магнитное поле, 255 десятичных представляет низкое магнитное поле. (8-13)Флаги диагностики
+const int AS5048A_MAGNITUDE                     = 0x3FFE; //Значение выходной мощности CORDIC 
+const int AS5048A_ANGLE                         = 0x3FFF; //Угловое выходное значение, включая коррекцию нулевой позиции Resolution_ADC 14-bit resolution (0.0219°/LSB)
 
 /**
  * Constructor
@@ -30,23 +30,23 @@ void AS5048A::init(){
 	/** 
 	* 1MHz clock (AMS should be able to accept up to 10MHz)
 	* mySettting (speedMaximum, dataOrder, dataMode)
-	* speedMaximum - РјР°РєСЃРёРјР°Р»СЊРЅР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ СЃРІСЏР·Рё. Р”Р»СЏ С‡РёРїР° SPI, СЂР°СЃСЃС‡РёС‚Р°РЅРЅРѕРіРѕ РЅР° С‡Р°СЃС‚РѕС‚Сѓ РґРѕ 20 РњР“С† , РёСЃРїРѕР»СЊР·СѓР№С‚Рµ 20000000.
-	* dataOrder - РїРѕСЂСЏРґРѕРє РІС‹РІРѕРґР° РґР°РЅРЅР°С… РІ/РёР· С€РёРЅС‹ SPI,  РјРѕР¶РµС‚ Р±С‹С‚СЊ LSBFIRST (РЅР°РёРјРµРЅСЊС€РёР№ СЂР°Р·СЂСЏРґ(Р±РёС‚) РїРµСЂРІС‹Р№) РёР»Рё MSBFIRST (СЃС‚Р°СЂС€РёР№ СЂР°Р·СЂСЏРґ РїРµСЂРІС‹Р№)
-	* dataMode - СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЂРµР¶РёРј СЂР°Р±РѕС‚С‹ С€РёРЅС‹ SPI, Р·Р°РґР°РІР°СЏ СѓСЂРѕРІРµРЅСЊ СЃРёРіРЅР°Р»Р° СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё Рё С„Р°Р·Сѓ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё
-	* SPI_MODE0 (РЈСЂРѕРІРµРЅСЊ СЃРёРіРЅР°Р»Р° (CPOL)-0, Р¤Р°Р·Р° (CPHA)-0)
-	* SPI_MODE1 (РЈСЂРѕРІРµРЅСЊ СЃРёРіРЅР°Р»Р° (CPOL)-0, Р¤Р°Р·Р° (CPHA)-1) 
-	* SPI_MODE2 (РЈСЂРѕРІРµРЅСЊ СЃРёРіРЅР°Р»Р° (CPOL)-1, Р¤Р°Р·Р° (CPHA)-0)
-	* SPI_MODE3 (РЈСЂРѕРІРµРЅСЊ СЃРёРіРЅР°Р»Р° (CPOL)-1, Р¤Р°Р·Р° (CPHA)-1)
+	* speedMaximum - максимальная скорость связи. Для чипа SPI, рассчитанного на частоту до 20 МГц , используйте 20000000.
+	* dataOrder - порядок вывода даннах в/из шины SPI,  может быть LSBFIRST (наименьший разряд(бит) первый) или MSBFIRST (старший разряд первый)
+	* dataMode - устанавливает режим работы шины SPI, задавая уровень сигнала синхронизации и фазу синхронизации
+	* SPI_MODE0 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-0)
+	* SPI_MODE1 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-1) 
+	* SPI_MODE2 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-0)
+	* SPI_MODE3 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-1)
 	* f(sample) = Min-10.2, Typ-11.25, Max-12.4. (kHz) 
-	* РџРѕРґРґРµСЂР¶РёРІР°РµРјС‹Рµ СЂРµР¶РёРјС‹  I2C AS5048B:
-	* вЂў РЎР»СѓС‡Р°Р№РЅРѕРµ / РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕРµ С‡С‚РµРЅРёРµ
-	* вЂў Р‘Р°Р№С‚ / Р—Р°РїРёСЃСЊ СЃС‚СЂР°РЅРёС†С‹
-	* вЂў РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№: РѕС‚ 0 РґРѕ 100 РєР“С†, С‚Р°РєС‚РѕРІР°СЏ С‡Р°СЃС‚РѕС‚Р° (РІРµРґРѕРјС‹Р№ СЂРµР¶РёРј)
-	* вЂў Р‘С‹СЃС‚СЂС‹Р№ СЂРµР¶РёРј: С‚Р°РєС‚РѕРІР°СЏ С‡Р°СЃС‚РѕС‚Р° РѕС‚ 0 РґРѕ 400 РєР“С† (РІРµРґРѕРјС‹Р№ СЂРµР¶РёРј)
-	* вЂў Р’С‹СЃРѕРєР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ: РѕС‚ 0 РґРѕ 3,4 РњР“С† С‚Р°РєС‚РѕРІРѕР№ С‡Р°СЃС‚РѕС‚С‹ (РІРµРґРѕРјС‹Р№ СЂРµР¶РёРј)
+	* Поддерживаемые режимы  I2C AS5048B:
+	* • Случайное / последовательное чтение
+	* • Байт / Запись страницы
+	* • Стандартный: от 0 до 100 кГц, тактовая частота (ведомый режим)
+	* • Быстрый режим: тактовая частота от 0 до 400 кГц (ведомый режим)
+	* • Высокая скорость: от 0 до 3,4 МГц тактовой частоты (ведомый режим)
 	*/		
 	settings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
-	//РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїРёРЅР° Slave Select РµСЃР»Рё LOW РІРµРґРѕРјС‹Р№ РІР·Р°РёРјРѕРґРµР№СЃС‚РІСѓРµС‚ СЃ РІРµРґСѓС‰РёРј РµСЃР»Рё HIGH РІРµРґРѕРјС‹Р№ РёРіРЅРѕСЂРёСЂСѓРµС‚ СЃРёРіРЅР°Р»С‹ РѕС‚ РІРµРґСѓС‰РµРіРѕ
+	//инициализация пина Slave Select если LOW ведомый взаимодействует с ведущим если HIGH ведомый игнорирует сигналы от ведущего
 	pinMode(_cs, OUTPUT);
 	//SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
 	SPI.begin();
@@ -109,63 +109,76 @@ word AS5048A::getRawRotation(bool EnableMedianValue){
 }
 
 /**
- *Р’РѕР·РІСЂР°С‰Р°РµС‚ С„РёР·РёС‡РµСЃРєСѓСЋ РІРµР»РёС‡РёРЅСѓ РІ СѓРіР»РѕРІС‹С… РіСЂР°РґСѓСЃР°С…, РїРѕР»СѓС‡РµРЅРЅРѕРµ РёР· РґРІРѕРёС‡РЅРѕРіРѕ С‡РёСЃР»Р° РђР¦Рџ
+ *Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП
  */
 float AS5048A::RotationRawToAngle (word DiscreteCode){
 	return DiscreteCode * (360.0 / float(AS5048A_ANGLE));
 }
 
 /**
- * Р’РѕР·РІСЂР°С‰Р°РµС‚ РёРЅРєСЂРµРјРµРЅС‚РЅС‹Р№ Рё РґРµРєСЂРµРјРµРЅС‚РЅС‹Р№ СѓРіРѕР» РїРѕРІРѕСЂРѕС‚Р° РІ РїРµСЂРµРјРµРЅРЅСѓСЋ RotationAngle РІ РїСЂРѕС†РµРґСѓСЂСѓ РїСЂРµСЂРµРґР°СЋС‚СЊСЃСЏ Р°РґСЂРµСЃР° РїРµСЂРµРјРµРЅРЅС‹С… 
+ * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередаються адреса переменных 
  */
 void AS5048A::AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious){
 
 	if (*AngleCurrent != *AnglePrevious){
-	
+		//сделан круг на возростание с 360 на 1
         if ( (*AngleCurrent < 90) && (*AnglePrevious > 270) ){
             *RotationAngle += abs(360 - abs(*AngleCurrent - *AnglePrevious));
+			reverse = true;
 		}  
-		
+		//сделан круг на убывание с 1 на 360
         if ( (*AnglePrevious < 90) && (*AngleCurrent > 270) ){
             *RotationAngle -= abs(360 - abs(*AngleCurrent - *AnglePrevious));
+			reverse = false;
 		}
-        
+        //ход по кругу на возростание
         if (*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
             *RotationAngle += abs(*AngleCurrent - *AnglePrevious);
+			reverse = true;
 		} 
-            
+        //ход по кругу на убывание
         if (*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
             *RotationAngle -= abs(*AnglePrevious - *AngleCurrent);
-		}
+			reverse = false;
+		}		
 	}
 
     *AnglePrevious = *AngleCurrent;		
 }
 
 /**
-*РІРѕР·РІСЂР°С‰Р°РµС‚ РјРёРЅСѓС‚С‹ СѓРіР»Р°
+*возвращает минуты угла
 */
 float AS5048A::GetAngularMinutes (float AngleAbsolute){
 	return ( AngleAbsolute - int(AngleAbsolute) ) *60;
 }
 
 /**
-*РІРѕР·РІСЂР°С‰Р°РµС‚ СЃРµРєСѓРЅРґС‹ СѓРіР»Р°
+*возвращает секунды угла
 */
 float AS5048A::GetAngularSeconds (float AngleAbsolute){
 	return (AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)) ) * 60;
 }
 
 /**
-*РІРѕР·РІСЂР°С‰Р°РµС‚ РїРµСЂРµРјРµС‰РµРЅРёРµ РїСЂСЏРјРѕР·СѓР±РѕР№ Р·СѓР±С‡Р°С‚РѕР№ СЂРµРєР№РєРё РІ РјРј
-*WheelRotationAngle - РЈРіРѕР» РїРѕРІРѕСЂРѕС‚Р° РєРѕР»РµСЃР°
-*NormalModule - РњРѕРґСѓР»СЊ РЅРѕСЂРјР°Р»СЊРЅС‹Р№
-*NumberGearTeeth - Р§РёСЃР»Рѕ Р·СѓР±СЊРµРІ РєРѕР»РµСЃР° РёР»Рё С‡РёСЃР»Рѕ Р·Р°С…РѕРґРѕРІ С‡РµСЂРІСЏРєР°
-*(PI * NormalModule) - РЁР°Рі С‚РѕСЂС†РѕРІС‹Р№
-*20 - РЈРіРѕР» РЅР°РєР»РѕРЅР° Р·СѓР±Р°
+*возвращает перемещение прямозубой зубчатой рекйки в мм
+*WheelRotationAngle - Угол поворота колеса
+*NormalModule - Модуль нормальный
+*NumberGearTeeth - Число зубьев колеса или число заходов червяка
+*(PI * NormalModule) - Шаг торцовый
+*20 - Угол наклона зуба
 */ 
-float AS5048A::LinearDisplacementRack ( float WheelRotationAngle,float NormalModule, float NumberGearTeeth){	 
+float AS5048A::LinearDisplacementRack ( float WheelRotationAngle, float NormalModule, float NumberGearTeeth){	 
 	return (WheelRotationAngle * ( (PI * NormalModule) / cos(20) ) * NumberGearTeeth) / 360;
+}
+
+/**
+*возвращает перемещение винтовой предачи в мм
+*StepGroove - шаг резьбы винта
+*ScrewRotationAngle - угол поворота винта
+*/ 
+float AS5048A::LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGroove){	 
+	return (ScrewRotationAngle * (StepGroove / 360));
 }
 
 /**
@@ -173,7 +186,7 @@ float AS5048A::LinearDisplacementRack ( float WheelRotationAngle,float NormalMod
  * @return 16 bit word containing flags
  */
 word AS5048A::getState(){
-	return read(AS5048A_DIAG_AGC);
+	return read(AS5048A_DIAG_AGC,false);
 }
 
 /**
@@ -185,6 +198,21 @@ void AS5048A::printState(){
 	if(AS5048A::error()){
 		Serial.print("Error bit was set!");
 	}
+	Serial.println("Значение автоматического регулирования усиления манитного поля");
+	Serial.println("255 представляет собой низкое магнитное поле");
+	Serial.println("0 представляет собой высокое магнитное поле");
+	Serial.println(lowByte(data), BIN);
+	Serial.println(lowByte(data), DEC);
+	
+	Serial.print("Флаги диагностики ");
+	Serial.print("OCF-");
+	Serial.print(bitRead(data,8), DEC);
+	Serial.print(" COF-");
+	Serial.print(bitRead(data,9), DEC);
+	Serial.print(" Comp Low-");
+	Serial.print(bitRead(data,10), DEC);
+	Serial.print(" Comp High-");
+	Serial.println(bitRead(data,11), DEC);
 	Serial.println(data, BIN);
 }
 
@@ -202,7 +230,7 @@ byte AS5048A::getGain(){
  * Get and clear the error register by reading it
  */
 word AS5048A::getErrors(){
-	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG);
+	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG,false);
 }
 
 /**
@@ -220,7 +248,7 @@ word AS5048A::getZeroPosition(){
 }
 
 /**
- *С„СѓРЅРєС†РёСЏ РґР»СЏ СЃРѕСЂС‚РёСЂРѕРІРєРё РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ
+ *функция для сортировки по возрастанию
  */
 void AS5048A::quickSort(word *arr, int left, int right) { 
 	int i = left, j = right; 
@@ -262,9 +290,10 @@ bool AS5048A::error(){
  * Returns the value of the register
  */
 word AS5048A::read(word registerAddress, bool MeaValueMedian){
-	word buffer = 0x00;
+	word buffer;
 	word array_buffer[16];
 	word command = 0b0100000000000000; // PAR=0 R/W=R
+	
 	command = command | registerAddress;
 	//Add a parity bit on the the MSB
 	command |= ((word)spiCalcEvenParity(command)<<15);
@@ -275,53 +304,55 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	Serial.print(") with command: 0b");
 	Serial.println(command, BIN);
 #endif
-
-	//SPI - begin transaction
-	SPI.beginTransaction(settings);
 	
 	//Send the command and Now read the response
 	if (MeaValueMedian == true){
+	
+		//SPI - begin transaction
+		SPI.beginTransaction(settings);
 		for ( byte i = 0; i < 16; i++){
 			digitalWrite(_cs, LOW);
 			array_buffer[i] = SPI.transfer16(command) & ~0xC000;
 			digitalWrite(_cs, HIGH);
+			//Serial.println(array_buffer[i], BIN);		
 		}
+		SPI.endTransaction();
+		//SPI - end transaction
+
+		quickSort(array_buffer, 0, 15);
+		buffer = ( array_buffer[8]  + array_buffer[9]  ) / 2 ;			
+		//Serial.println(" ");
+		
+		//Return the data, stripping the parity and error bits
+		return buffer;	
 	}else{
+		//SPI - begin transaction
+		SPI.beginTransaction(settings);
 		digitalWrite(_cs, LOW);
 		buffer = SPI.transfer16(command);
 		digitalWrite(_cs, HIGH);
-	}	
-
-	//SPI - end transaction
-	SPI.endTransaction();
-	
-	if (MeaValueMedian == true){
-		quickSort(array_buffer, 0, 15);	
-		buffer = (array_buffer[8] + array_buffer[9])/2;	
-		Serial.println(buffer, BIN);		
-	}
-
+		SPI.endTransaction();
+		//SPI - end transaction
+		
 #ifdef AS5048A_DEBUG
 	Serial.print("Read returned: ");
-	//Serial.print(left_byte, BIN);
 	Serial.print(highByte(buffer), BIN);
-	Serial.print(" ");
-	//Serial.println(right_byte, BIN);
 	Serial.print(lowByte(buffer), BIN);
 #endif
 
-	//Check if the error bit is set
-	if (/*left_byte*/ highByte(buffer) & 0x40) {
+		//Check if the error bit is set
+		if (bitRead(buffer,14)) {
 #ifdef AS5048A_DEBUG
-		Serial.println("Setting error bit");
+	Serial.println("Setting error bit");
 #endif
-		errorFlag = true;
-	}else {
-		errorFlag = false;
-	}
-
+			errorFlag = true;
+		}else {
+			errorFlag = false;
+		}
+		
 	//Return the data, stripping the parity and error bits
-	return /*(( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000*/ buffer & ~0xC000;
+	return buffer & ~0xC000;
+	}
 }
 
 

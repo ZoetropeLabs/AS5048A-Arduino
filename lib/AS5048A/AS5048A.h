@@ -18,6 +18,7 @@ class AS5048A{
 	byte clk;
 	word position;
 	word transaction(word data);
+	bool reverse; //Флаг напраления движения ползуна станка
 
 	SPISettings settings;
 
@@ -43,9 +44,9 @@ class AS5048A{
 	 * Read a register from the sensor
 	 * Takes the address of the register as a 16 bit word
 	 * Returns the value of the register
-	 * MeaValueMedian СЂР°Р·СЂРµС€Р°РµС‚ РЅР°Р№С‚Рё РјРµРґРёР°РЅРѕРµ СЃСЂРµРґРЅРµРµ Р·РЅР°С‡РµРЅРёРµ РёР· 16 РёР·РјРµСЂРµРЅРёР№ С‚Р°Рє РєР°Рє
-	 * РїРѕСЃР»Рµ 16 С‚Р°РєС‚РѕРІ CLK С†РёРєР»РѕРІ, CSn РЅРµРѕР±С…РѕРґРёРјРѕ РІРµСЂРЅСѓС‚СЊ Рє РІС‹СЃРѕРєРѕРјСѓ СЃРѕСЃС‚РѕСЏРЅРёСЋ, С‡С‚РѕР±С‹ СЃР±СЂРѕСЃРёС‚СЊ
-	   РЅРµРєРѕС‚РѕСЂС‹Рµ С‡Р°СЃС‚Рё СЏРґСЂР° РёРЅС‚РµСЂС„РµР№СЃР°.
+	 * MeaValueMedian разрешает найти медианое среднее значение из 16 измерений так как
+	 * после 16 тактов CLK циклов, CSn необходимо вернуть к высокому состоянию, чтобы сбросить
+	   некоторые части ядра интерфейса.
 	 */
 	word read(word registerAddress, bool MeaValueMedian = false);
 
@@ -71,39 +72,46 @@ class AS5048A{
 	word getRawRotation(bool EnableMedianValue = false);
 
 	/**
-	 * Р’РѕР·РІСЂР°С‰Р°РµС‚ С„РёР·РёС‡РµСЃРєСѓСЋ РІРµР»РёС‡РёРЅСѓ РІ СѓРіР»РѕРІС‹С… РіСЂР°РґСѓСЃР°С…, РїРѕР»СѓС‡РµРЅРЅРѕРµ РёР· РґРІРѕРёС‡РЅРѕРіРѕ С‡РёСЃР»Р° РђР¦Рџ  
+	 * Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП  
 	 */
 	float RotationRawToAngle (word DiscreteCode);
 
 	/**
-	* Р’РѕР·РІСЂР°С‰Р°РµС‚ РёРЅРєСЂРµРјРµРЅС‚РЅС‹Р№ Рё РґРµРєСЂРµРјРµРЅС‚РЅС‹Р№ СѓРіРѕР» РїРѕРІРѕСЂРѕС‚Р° РІ РїРµСЂРµРјРµРЅРЅСѓСЋ RotationAngle РІ РїСЂРѕС†РµРґСѓСЂСѓ РїСЂРµСЂРµРґР°СЋС‚СЊ Р°РґСЂРµСЃР° РїРµСЂРµРјРµРЅРЅС‹С… 
+	* Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
 	*/
 	void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious);
 
 	/**
-	*С„СѓРЅРєС†РёСЏ РґР»СЏ СЃРѕСЂС‚РёСЂРѕРІРєРё РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ
+	*функция для сортировки по возрастанию
 	*/
 	void quickSort(word *arr, int left, int right);
 
 	/**
-	*РІРѕР·РІСЂР°С‰Р°РµС‚ РјРёРЅСѓС‚С‹ СѓРіР»Р°
+	*возвращает минуты угла
 	*/
 	float GetAngularMinutes (float AngleAbsolute);
 
 	/**
-	*РІРѕР·РІСЂР°С‰Р°РµС‚ СЃРµРєСѓРЅРґС‹ СѓРіР»Р°
+	*возвращает секунды угла
 	*/
 	float GetAngularSeconds (float AngleAbsolute);
 	
 	/**
-	*РІРѕР·РІСЂР°С‰Р°РµС‚ РїРµСЂРµРјРµС‰РµРЅРёРµ РїСЂСЏРјРѕР·СѓР±РѕР№ Р·СѓР±С‡Р°С‚РѕР№ СЂРµРєР№РєРё РІ РјРј
-	*WheelRotationAngle - РЈРіРѕР» РїРѕРІРѕСЂРѕС‚Р° РєРѕР»РµСЃР°
-	*NormalModule - РњРѕРґСѓР»СЊ РЅРѕСЂРјР°Р»СЊРЅС‹Р№
-	*NumberGearTeeth - Р§РёСЃР»Рѕ Р·СѓР±СЊРµРІ РєРѕР»РµСЃР° РёР»Рё С‡РёСЃР»Рѕ Р·Р°С…РѕРґРѕРІ С‡РµСЂРІСЏРєР°
-	*(PI * NormalModule) - РЁР°Рі С‚РѕСЂС†РѕРІС‹Р№
-	*20 - РЈРіРѕР» РЅР°РєР»РѕРЅР° Р·СѓР±Р°
+	*возвращает перемещение прямозубой зубчатой рекйки в мм
+	*WheelRotationAngle - Угол поворота колеса
+	*NormalModule - Модуль нормальный
+	*NumberGearTeeth - Число зубьев колеса или число заходов червяка
+	*(PI * NormalModule) - Шаг торцовый
+	*20 - Угол наклона зуба
 	*/ 
 	float LinearDisplacementRack ( float WheelRotationAngle, float NormalModule, float NumberGearTeeth);
+	
+	/**
+	*возвращает перемещение винтовой предачи в мм
+	*StepGroove - шаг резьбы винта
+	*ScrewRotationAngle - eгол поворота винта
+	*/ 
+	float LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGroove);
 
 	/**
 	 * returns the value of the state register
@@ -146,7 +154,7 @@ class AS5048A{
 	
 	private:
 	/**
-	 * РІРѕР·РІСЂР°С‰Р°РµС‚ Р±РёС‚ С‡С‘С‚РЅРѕСЃС‚Рё
+	 * возвращает бит чётности
 	 */
 	byte spiCalcEvenParity(word);
 };
