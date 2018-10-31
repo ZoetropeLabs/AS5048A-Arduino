@@ -14,6 +14,7 @@ const int AS5048A_ANGLE                         = 0x3FFF; //Угловое вы�
 
 /**
  * Constructor
+ * Иницмализация библиотеки AS5048A
  */
 AS5048A::AS5048A(byte arg_cs){
 	_cs = arg_cs;
@@ -62,6 +63,7 @@ void AS5048A::close(){
 
 /**
  * Utility function used to calculate even parity of word
+ * Вычисление бита чётности 14 битного адресса и запись в 15-й бит возвращаемого 16 битного слова
  */ 
 byte AS5048A::spiCalcEvenParity(word value){
 	//byte cnt = 0;
@@ -103,13 +105,15 @@ int AS5048A::getRotation(){
 
 /**
  * Returns the raw angle directly from the sensor
+ * Возвращает уголовое двоичное 14 битное угловое значение (DEC 16383)
+ * Угловое выходное значение, включая коррекцию нулевой позиции.
  */
 word AS5048A::getRawRotation(bool EnableMedianValue){
 	return AS5048A::read(AS5048A_ANGLE, EnableMedianValue);
 }
 
 /**
- *Возвращает физическую величину в угловых градусах, полученное из двоичного числа АЦП
+ *Возвращает физическую величину в угловых градусах, полученное из двоичного 14 битного числа АЦП
  */
 float AS5048A::RotationRawToAngle (word DiscreteCode){
 	return DiscreteCode * (360.0 / float(AS5048A_ANGLE));
@@ -122,22 +126,26 @@ void AS5048A::AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, 
 
 	if (*AngleCurrent != *AnglePrevious){
 		//сделан круг на возростание с 360 на 1
-        if ( (*AngleCurrent < 90) && (*AnglePrevious > 270) ){
+        if ((*AngleCurrent < 90) && (*AnglePrevious > 270) || 
+		(*AngleCurrent < 1.5707963267948966192313216916398) && (*AnglePrevious > 4.7123889803846898576939650749193) ){
             *RotationAngle += abs(360 - abs(*AngleCurrent - *AnglePrevious));
 			reverse = true;
 		}  
 		//сделан круг на убывание с 1 на 360
-        if ( (*AnglePrevious < 90) && (*AngleCurrent > 270) ){
+        if ((*AnglePrevious < 90) && (*AngleCurrent > 270) || 
+		(*AnglePrevious < 1.5707963267948966192313216916398) && (*AngleCurrent > 4.7123889803846898576939650749193) ){
             *RotationAngle -= abs(360 - abs(*AngleCurrent - *AnglePrevious));
 			reverse = false;
 		}
         //ход по кругу на возростание
-        if (*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
+        if (*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true ||
+		*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 1.5707963267948966192313216916398) && (*AnglePrevious > 4.7123889803846898576939650749193))!=true && ((*AnglePrevious < 1.5707963267948966192313216916398) && (*AngleCurrent > 4.7123889803846898576939650749193))!=true){
             *RotationAngle += abs(*AngleCurrent - *AnglePrevious);
 			reverse = true;
 		} 
         //ход по кругу на убывание
-        if (*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true){
+        if (*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true ||
+		*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 1.5707963267948966192313216916398) && (*AnglePrevious > 4.7123889803846898576939650749193))!=true && ((*AnglePrevious < 1.5707963267948966192313216916398) && (*AngleCurrent > 4.7123889803846898576939650749193))!=true){
             *RotationAngle -= abs(*AnglePrevious - *AngleCurrent);
 			reverse = false;
 		}		
@@ -184,19 +192,22 @@ float AS5048A::LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGro
 /**
  * returns the value of the state register
  * @return 16 bit word containing flags
+ * Возвращает значение диагностического регистра датчика
+ * размером 16 бит из них 13 значищих (пример 1101100110101)
  */
 word AS5048A::getState(){
-	return read(AS5048A_DIAG_AGC,false);
+	return read(AS5048A_DIAG_AGC,false) & ~0xE000;
 }
 
 /**
  * Print the diagnostic register of the sensor
+ * Вывести в порт Serial значение диагностического регистра датчика
  */
 void AS5048A::printState(){
 	word data;
 	data = AS5048A::getState();
 	if(AS5048A::error()){
-		Serial.print("Error bit was set!");
+		Serial.print("Error bit was set! (function printState)");
 	}
 	Serial.println("Значение автоматического регулирования усиления манитного поля");
 	Serial.println("255 представляет собой низкое магнитное поле");
@@ -220,14 +231,20 @@ void AS5048A::printState(){
 /**
  * Returns the value used for Automatic Gain Control (Part of diagnostic
  * register)
+ * Возвращает значение Автоматического контроля усления диагностического регистра
  */
 byte AS5048A::getGain(){
 	word data = AS5048A::getState();
+	if(AS5048A::error()){
+		Serial.print("Error bit was set! (function getGain)");
+	}
 	return (byte) data & 0xFF;
 }
 
 /**
  * Get and clear the error register by reading it
+ * Очистить флаг ошибки
+ * Регистр ошибок. Все ошибки очищаются путем доступа
  */
 word AS5048A::getErrors(){
 	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG,false);
@@ -279,6 +296,7 @@ void AS5048A::quickSort(word *arr, int left, int right) {
 
 /**
  * Check if an error has been encountered.
+ * Флаг ошибки, указывающий на ошибку передачи в предыдущей передаче ведущего устройства (Master)
  */
 bool AS5048A::error(){
 	return errorFlag;
@@ -288,6 +306,7 @@ bool AS5048A::error(){
  * Read a register from the sensor
  * Takes the address of the register as a 16 bit word
  * Returns the value of the register
+ * Отправка комманды на чтения регистров датчика
  */
 word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	word buffer;
