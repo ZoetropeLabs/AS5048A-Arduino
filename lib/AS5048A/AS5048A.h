@@ -134,7 +134,15 @@ class AS5048A{
 	 * Get and clear the error register by reading it
 	 */
 	word getErrors();
-
+	
+	/**
+	 * Получить и очистить регистр ошибок и вывести значение регистра в Serial порт
+	 */
+	void printErrors();
+	
+	
+	void DummyOperNoInf();
+	
 	/**
 	 * Set the zero position
 	 */
