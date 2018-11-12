@@ -4,6 +4,7 @@
 
 //#define AS5048A_DEBUG
 
+const int AS5048A_NOP             				= 0x0000; // Aиктивная операция, нет информации.
 const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
 const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до прожига памяти. Перед программированием проверка является обязательной. См. Процедуру программирования.
 const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение с высоким байтом
@@ -66,24 +67,24 @@ void AS5048A::close(){
  * Вычисление бита чётности 14 битного адресса и запись в 15-й бит возвращаемого 16 битного слова
  */ 
 byte AS5048A::spiCalcEvenParity(word value){
-	//byte cnt = 0;
-	//byte i;
-	//for (i = 0; i < 15; i++)
-	//{
-	//   if (value & 0x1)
-	//	{
-	//		cnt++;
-	//	}
-	//	value >>= 1;
-	//}
-	//return cnt & 0x1;
+	byte cnt = 0;
+	byte i;
+	for (i = 0; i < 15; i++)
+	{
+	   if (value & 0x1)
+		{
+			cnt++;
+		}
+		value >>= 1;
+	}
+	return cnt & 0x1;
 	
-	byte operand_compare =  bitRead(value,0);
-	byte i = 1;
-	do{
-		operand_compare ^= bitRead(value,i);
-	} while ((i++) < 14);
-	return operand_compare & 0x1;
+	//byte operand_compare =  bitRead(value,0);
+	//byte i = 1;
+	//do{
+	//	operand_compare ^= bitRead(value,i);
+	//} while ((i++) < 14);
+	//return operand_compare & 0x1;
 }
 
 
@@ -196,7 +197,7 @@ float AS5048A::LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGro
  * размером 16 бит из них 13 значищих (пример 1101100110101)
  */
 word AS5048A::getState(){
-	return read(AS5048A_DIAG_AGC,false) & ~0xE000;
+	return read(AS5048A_DIAG_AGC,false) & ~0xC000;
 }
 
 /**
@@ -207,16 +208,24 @@ void AS5048A::printState(){
 	word data;
 	data = AS5048A::getState();
 	if(AS5048A::error()){
-		Serial.print("Error bit was set! (function printState)");
+		Serial.println("Error bit was set! (function printState register Diagnostics + Automatic Gain Control (AGC) )");
 	}
+	Serial.println(" ");
 	Serial.println("Значение автоматического регулирования усиления манитного поля");
 	Serial.println("255 представляет собой низкое магнитное поле");
 	Serial.println("0 представляет собой высокое магнитное поле");
-	Serial.println(lowByte(data), BIN);
+	//Serial.println(lowByte(data), BIN);
 	Serial.println(lowByte(data), DEC);
 	
-	Serial.print("Флаги диагностики ");
-	Serial.print("OCF-");
+/**Диагностические функции AS5048
+* AS5048 обеспечивает диагностические функции ИС, а также диагностические функции магнитного поля ввода. Доступны следующие диагностические флаги: см. Рис. 22 адрес регистра x3FFD (AS5048A) или адрес 31 адреса адреса 251 деци (AS5048B)
+	* • OCF (Компенсация смещения завершена), логический максимум указывает законченный алгоритм компенсации смещения. После включения флаг всегда остается логически высоким.
+	* • COF (CORDIC Overflow), логический максимум указывает на ошибку вне диапазона в части CORDIC. Когда этот бит установлен, данные угла и величины недействительны. Абсолютный выход сохраняет последнее действительное угловое значение.
+	* • COMP low, указывает на высокое магнитное поле. Рекомендуется дополнительно контролировать величину величины.
+	* • COMP высокий, указывает на слабое магнитное поле. Рекомендуется контролировать величину величины.
+ */
+	Serial.print("Флаги диагностики");
+	Serial.print(" OCF-");
 	Serial.print(bitRead(data,8), DEC);
 	Serial.print(" COF-");
 	Serial.print(bitRead(data,9), DEC);
@@ -236,18 +245,48 @@ void AS5048A::printState(){
 byte AS5048A::getGain(){
 	word data = AS5048A::getState();
 	if(AS5048A::error()){
-		Serial.print("Error bit was set! (function getGain)");
+		Serial.print("Error bit was set! (function getGain register Diagnostics + Automatic Gain Control (AGC) )");
 	}
 	return (byte) data & 0xFF;
 }
 
 /**
  * Get and clear the error register by reading it
- * Очистить флаг ошибки
+ * Очистить флаг ошибки и возврат три бита (0бит Framing Error, 1бит Command Invalid, 2бит Parity Error)
  * Регистр ошибок. Все ошибки очищаются путем доступа
  */
 word AS5048A::getErrors(){
-	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG,false);
+	return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG,false) & ~0xC000;
+}
+
+/**
+ * Получить и очистка регистра ошибок и вывести значение регистра в Serial порт
+ */
+void AS5048A::printErrors(){
+	word data;
+	data = AS5048A::getErrors();
+	data = AS5048A::getErrors();
+	if(AS5048A::error()){
+		Serial.println("Error bit was set! (function printErrors register Clear Error Flag)");
+	}
+	Serial.println("--");
+	Serial.println("Регистр ошибок");
+	Serial.print("Ошибка кадра (пакета) комманды ");
+	Serial.println(bitRead(data,0), DEC);
+	Serial.print("Неверная команда ");
+	Serial.println(bitRead(data,1), DEC);
+	Serial.print("Ошибка бита четности ");
+	Serial.println(bitRead(data,2), DEC);
+	Serial.println(data, DEC);
+	Serial.println("--");
+}	
+
+ 
+void AS5048A::DummyOperNoInf(){
+
+	Serial.println("->"); 
+	Serial.println(read(AS5048A_NOP,false), DEC); 	
+	Serial.println("-> "); 
 }
 
 /**
@@ -343,6 +382,9 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 		//Serial.println(" ");
 		
 		//Return the data, stripping the parity and error bits
+		Serial.println(" ");
+		Serial.println(buffer, DEC);
+		Serial.println(" ");
 		return buffer;	
 	}else{
 		//SPI - begin transaction
@@ -360,6 +402,7 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 #endif
 
 		//Check if the error bit is set
+		//Если в 15 бите установлена 1 (ошибка передачи в предыдущей передаче ведущего устройства) errorFlag установить 1 иначе 0
 		if (bitRead(buffer,14)) {
 #ifdef AS5048A_DEBUG
 	Serial.println("Setting error bit");
@@ -368,7 +411,9 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 		}else {
 			errorFlag = false;
 		}
-		
+	Serial.println("1");
+	Serial.println(buffer, DEC);
+	Serial.println("1");
 	//Return the data, stripping the parity and error bits
 	return buffer & ~0xC000;
 	}
