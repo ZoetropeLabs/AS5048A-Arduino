@@ -4,7 +4,7 @@
 
 //#define AS5048A_DEBUG
 
-const int AS5048A_NOP             				= 0x0000; // Aиктивная операция, нет информации.
+const int AS5048A_NOP             				= 0x0000; // Фиктивная операция, нет информации.
 const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
 const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до прожига памяти. Перед программированием проверка является обязательной. См. Процедуру программирования.
 const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение с высоким байтом
@@ -280,7 +280,9 @@ void AS5048A::printErrors(){
 	//Serial.println(data, BIN);
 }	
 
- 
+/**
+ * Процидура посылает команда NOP. Команда NOP представляет собой фиктивную запись в регитр x0000 сенсора AS5048
+ */ 
 void AS5048A::DummyOperNoInf(){
 	Serial.println(read(AS5048A_NOP,false), DEC); 	
 }
@@ -300,7 +302,7 @@ word AS5048A::getZeroPosition(){
 }
 
 /**
- *функция для сортировки по возрастанию
+ * функция для сортировки по возрастанию
  */
 void AS5048A::quickSort(word *arr, int left, int right) { 
 	int i = left, j = right; 
