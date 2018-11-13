@@ -233,7 +233,8 @@ void AS5048A::printState(){
 	Serial.print(bitRead(data,10), DEC);
 	Serial.print(" Comp High-");
 	Serial.println(bitRead(data,11), DEC);
-	Serial.println(data, BIN);
+	Serial.println(" ");
+	//Serial.println(data, BIN);
 }
 
 
@@ -265,11 +266,9 @@ word AS5048A::getErrors(){
 void AS5048A::printErrors(){
 	word data;
 	data = AS5048A::getErrors();
-	data = AS5048A::getErrors();
 	if(AS5048A::error()){
 		Serial.println("Error bit was set! (function printErrors register Clear Error Flag)");
 	}
-	Serial.println("--");
 	Serial.println("Регистр ошибок");
 	Serial.print("Ошибка кадра (пакета) комманды ");
 	Serial.println(bitRead(data,0), DEC);
@@ -277,16 +276,13 @@ void AS5048A::printErrors(){
 	Serial.println(bitRead(data,1), DEC);
 	Serial.print("Ошибка бита четности ");
 	Serial.println(bitRead(data,2), DEC);
-	Serial.println(data, DEC);
-	Serial.println("--");
+	Serial.println(" ");
+	//Serial.println(data, BIN);
 }	
 
  
 void AS5048A::DummyOperNoInf(){
-
-	Serial.println("->"); 
 	Serial.println(read(AS5048A_NOP,false), DEC); 	
-	Serial.println("-> "); 
 }
 
 /**
@@ -355,6 +351,12 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 	command = command | registerAddress;
 	//Add a parity bit on the the MSB
 	command |= ((word)spiCalcEvenParity(command)<<15);
+	
+	SPI.beginTransaction(settings);
+	digitalWrite(_cs, LOW);
+	SPI.transfer16(command);
+	digitalWrite(_cs, HIGH);
+	SPI.endTransaction();
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Read (0x");
@@ -378,13 +380,9 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 		//SPI - end transaction
 
 		quickSort(array_buffer, 0, 15);
-		buffer = ( array_buffer[8]  + array_buffer[9]  ) / 2 ;			
-		//Serial.println(" ");
+		buffer = ( array_buffer[8]  + array_buffer[9]  ) / 2 ;	
 		
 		//Return the data, stripping the parity and error bits
-		Serial.println(" ");
-		Serial.println(buffer, DEC);
-		Serial.println(" ");
 		return buffer;	
 	}else{
 		//SPI - begin transaction
@@ -411,9 +409,7 @@ word AS5048A::read(word registerAddress, bool MeaValueMedian){
 		}else {
 			errorFlag = false;
 		}
-	Serial.println("1");
-	Serial.println(buffer, DEC);
-	Serial.println("1");
+
 	//Return the data, stripping the parity and error bits
 	return buffer & ~0xC000;
 	}
