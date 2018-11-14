@@ -27,7 +27,7 @@ class AS5048A{
 	/**
 	 *	Constructor
 	 */
-	AS5048A(byte arg_cs);
+	AS5048A(byte Arg_Cs);
 
 	/**
 	 * Initialiser
@@ -48,7 +48,7 @@ class AS5048A{
 	 * после 16 тактов CLK циклов, CSn необходимо вернуть к высокому состоянию, чтобы сбросить
 	   некоторые части ядра интерфейса.
 	 */
-	word read(word registerAddress, bool MeaValueMedian = false);
+	word read(word RegisterAddress, bool MeanValueMedian = false);
 
 	/**
 	 * Write to a register
@@ -57,7 +57,7 @@ class AS5048A{
 	 * Returns the value of the register after the write has been performed. This
 	 * is read back from the sensor to ensure a sucessful write.
 	 */
-	word write(word registerAddress, word data);
+	word write(word RegisterAddress, word WriteData);
 
 	/**
 	 * Get the rotation of the sensor relative to the zero position.
@@ -84,7 +84,7 @@ class AS5048A{
 	/**
 	*функция для сортировки по возрастанию
 	*/
-	void quickSort(word *arr, int left, int right);
+	void quickSort(word *Arr, int Left, int Right);
 
 	/**
 	*возвращает минуты угла
@@ -141,14 +141,21 @@ class AS5048A{
 	void printErrors();
 	
 	/**
-	 *Процидура посылает команда NOP. Команда NOP представляет собой фиктивную запись в регитр x0000 сенсора AS5048
+	 *Функция посылает команда NOP и возвращает содержимое регистра. Команда NOP представляет собой фиктивную 
+	 *запись в регитр x0000 сенсора AS5048
 	 */
-	void DummyOperNoInf();
+	word DummyOperNoInf();
+	
+	/**
+	 *Процидура записывает абсолютное значен измернное сенсером AS5048, случайно расположеного магнита на оси вращения,
+	 *как нулевую позицию угла 
+	 */
+	void ProgAbsolAngleZeroPosit ();
 	
 	/**
 	 * Set the zero position
 	 */
-	void setZeroPosition(word arg_position);
+	void setZeroPosition(word Arg_Position);
 
 	/**
 	 * Returns the current zero position
