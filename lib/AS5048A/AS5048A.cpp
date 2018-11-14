@@ -7,8 +7,8 @@
 const int AS5048A_NOP             				= 0x0000; // Фиктивная операция, нет информации.
 const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
 const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до прожига памяти. Перед программированием проверка является обязательной. См. Процедуру программирования.
-const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение с высоким байтом
-const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая позиция остается 6 младших младших разрядов
+const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение 8 бит старшх
+const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая значение 6 бит младших 
 const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Значение автоматического регулирования усиления. 0 десятичной представляет высокое магнитное поле, 255 десятичных представляет низкое магнитное поле. (8-13)Флаги диагностики
 const int AS5048A_MAGNITUDE                     = 0x3FFE; //Значение выходной мощности CORDIC 
 const int AS5048A_ANGLE                         = 0x3FFF; //Угловое выходное значение, включая коррекцию нулевой позиции Resolution_ADC 14-bit resolution (0.0219°/LSB)
@@ -17,8 +17,8 @@ const int AS5048A_ANGLE                         = 0x3FFF; //Угловое вы�
  * Constructor
  * Иницмализация библиотеки AS5048A
  */
-AS5048A::AS5048A(byte arg_cs){
-	_cs = arg_cs;
+AS5048A::AS5048A(byte Arg_Cs){
+	_cs = Arg_Cs;
 	errorFlag = false; 
 	position = 0;
 }
@@ -66,23 +66,23 @@ void AS5048A::close(){
  * Utility function used to calculate even parity of word
  * Вычисление бита чётности 14 битного адресса и запись в 15-й бит возвращаемого 16 битного слова
  */ 
-byte AS5048A::spiCalcEvenParity(word value){
+byte AS5048A::spiCalcEvenParity(word Value){
 	byte cnt = 0;
 	byte i;
 	for (i = 0; i < 15; i++)
 	{
-	   if (value & 0x1)
+	   if (Value & 0x1)
 		{
 			cnt++;
 		}
-		value >>= 1;
+		Value >>= 1;
 	}
 	return cnt & 0x1;
 	
-	//byte operand_compare =  bitRead(value,0);
+	//byte operand_compare =  bitRead(Value,0);
 	//byte i = 1;
 	//do{
-	//	operand_compare ^= bitRead(value,i);
+	//	operand_compare ^= bitRead(Value,i);
 	//} while ((i++) < 14);
 	//return operand_compare & 0x1;
 }
@@ -289,42 +289,62 @@ void AS5048A::printErrors(){
 }	
 
 /**
- * Процидура посылает команда NOP. Команда NOP представляет собой фиктивную запись в регитр x0000 сенсора AS5048
+ *Функция посылает команда NOP и возвращает содержимое регистра. Команда NOP представляет собой фиктивную 
+ *запись в регитр x0000 сенсора AS5048
  */ 
-void AS5048A::DummyOperNoInf(){
-	Serial.println(read(AS5048A_NOP,false), DEC); 	
+word AS5048A::DummyOperNoInf(){
+	return AS5048A::read(AS5048A_NOP,false); 	
 }
 
+/**
+ *Процидура записывает абсолютное значен измернное сенсером AS5048, случайно расположеного магнита на оси вращения,
+ *как нулевую позицию угла 
 
 Программирование AS5048
-Программирование нулевого положения: абсолютное положение угла может быть запрограммировано по интерфейсу. Это может быть полезно для случайного размещения магнита на оси вращения. Считывание в механическом нулевом положении может быть выполнено и записано обратно в ИС. При постоянном программировании позиция не обратима, хранящаяся в ИС. Это программирование может выполняться только один раз.
-
-Чтобы упростить вычисление нулевой позиции, необходимо только записать значение в ИС, которое было зачитано ранее из регистра угла.
+Программирование нулевого положения: абсолютное положение угла может быть запрограммировано по интерфейсу. Это может быть полезно для случайного размещения магнита на оси вращения. Считывание в механическом нулевом положении может быть выполнено и записано обратно в ИС. При постоянном программировании позиция не обратима, хранящаяся в ИС. Это программирование может выполняться только один раз. Чтобы упростить вычисление нулевой позиции, необходимо только записать значение в ИС, которое было зачитано ранее из регистра угла.
 
 Последовательность программирования с проверкой: для программирования нулевой позиции необходимо выполнить следующую последовательность:
-1. Запишите 0 в регистр нулевой позиции OTP, чтобы очистить;
-2. Информация о считываемом углу
-3. Запишите предыдущее положение угла считывания в ноль OTP
-регистр позиции
-Теперь устанавливается нулевое положение.
-Если вы хотите записать его в регистр OTP, отправьте:
-4. Установите бит «Включить программирование» в элементе управления OTP
-регистр
-5. Установите бит записи, чтобы начать автоматическое программирование.
-процедура
-6. Информация о ракурсе считывания (равна 0)
-7. Установите бит Verify для повторной загрузки данных OTP в
-внутренние регистры
-8. Информация о углу обзора (равна 0)
+1. Запишите 0 в регистр нулевой позиции OTP, чтобы очистить.
+2. Считать информацию текущего угла
+3. Запишите считанное положение угла в регистр нулевой позиции OTP.
+
+Теперь запись нулевого положение. Если вы хотите записать значение регистра OTP, отправьте:
+
+4. Установите бит программирования (Programming Enable) чтобы записать значение регистра управления OTP.
+5. Установите бит записи (Burn), чтобы запустить процедуру автоматического программирования.
+6. Считайте информацию текущего угла если (равно 0) то.
+7. Установите бит Verify для повторной загрузки OTP данных во внутренние регистры.
+8. Считайте информацию текущего угла для проверки (равно 0).
 
 Программирование может быть выполнено в режиме 5 В с использованием внутреннего LDO или 3V, но с минимальным напряжением питания 3,3 В. В случае работы 3 В также требуется конденсатор 10 мкФ на выводе VDD3.
-Программирование адреса ведомого устройства I?C. Информацию о программировании адреса подчиненного устройства I?C см. В нашем приложении, посвященном этой теме.
+ */
+void AS5048A::ProgAbsolAngleZeroPosit(){
+	word rotationzero = 0b0000000000000000;
+	word programcontrol = 0b00000000000000;
+	
+	AS5048A::write(AS5048A_OTP_REGISTER_ZERO_POS_HIGH, AS5048A_NOP & ~0xFF00); 
+	AS5048A::write(AS5048A_OTP_REGISTER_ZERO_POS_LOW, AS5048A_NOP & ~0xFFC0); 
+	
+	rotationzero |= AS5048A::getRawRotation();
+	
+	AS5048A::write(AS5048A_OTP_REGISTER_ZERO_POS_HIGH, (rotationzero >> 6) & 0xFF);
+	AS5048A::write(AS5048A_OTP_REGISTER_ZERO_POS_LOW, rotationzero & 0x3F);
+	
+	AS5048A::write(AS5048A_PROGRAMMING_CONTROL, bitSet(programcontrol,0));
+	AS5048A::write(AS5048A_PROGRAMMING_CONTROL, bitSet(programcontrol,3));
+	
+	if (1 < AS5048A::getRawRotation() < -1){
+		AS5048A::write(AS5048A_PROGRAMMING_CONTROL, bitSet(programcontrol,6));
+	}
+
+	Serial.println(AS5048A::getRawRotation(), DEC);	
+}
 
 /**
  * Set the zero position
  */
-void AS5048A::setZeroPosition(word arg_position){
-	position = arg_position % 0x3FFF;
+void AS5048A::setZeroPosition(word Arg_Position){
+	position = Arg_Position % 0x3FFF;
 }
 
 /**
@@ -337,31 +357,31 @@ word AS5048A::getZeroPosition(){
 /**
  * функция для сортировки по возрастанию
  */
-void AS5048A::quickSort(word *arr, int left, int right) { 
-	int i = left, j = right; 
+void AS5048A::quickSort(word *Arr, int Left, int Right) { 
+	int i = Left, j = Right; 
 	int tmp; 
-	word pivot = arr[(left + right) / 2]; 
+	word pivot = Arr[(Left + Right) / 2]; 
 
 	/* partition */ 
 	while (i <= j) { 
-		while (arr[i] < pivot) 
+		while (Arr[i] < pivot) 
 			i++; 
-		while (arr[j] > pivot) 
+		while (Arr[j] > pivot) 
 			j--; 
 		if (i <= j) { 
-			tmp = arr[i]; 
-			arr[i] = arr[j]; 
-			arr[j] = tmp; 
+			tmp = Arr[i]; 
+			Arr[i] = Arr[j]; 
+			Arr[j] = tmp; 
 			i++; 
 			j--; 
 		} 
 	} 
 
 	/* recursion */ 
-	if (left < j) 
-		quickSort(arr, left, j); 
-	if (i < right) 
-		quickSort(arr, i, right); 
+	if (Left < j) 
+		quickSort(Arr, Left, j); 
+	if (i < Right) 
+		quickSort(Arr, i, Right); 
 }
 
 /**
@@ -376,103 +396,106 @@ bool AS5048A::error(){
  * Read a register from the sensor
  * Takes the address of the register as a 16 bit word
  * Returns the value of the register
- * Отправка комманды на чтения регистров датчика
+ * Отправка комманды на чтения регистров сенсора AS5048A
  */
-word AS5048A::read(word registerAddress, bool MeaValueMedian){
-	word buffer;
-	word array_buffer[16];
+word AS5048A::read(word RegisterAddress, bool MeanValueMedian){
+	word readdata;
+	word array_data[16];
 	word command = 0b0100000000000000; // PAR=0 R/W=R
 	
-	command = command | registerAddress;
+	command |= RegisterAddress;
+	
 	//Add a parity bit on the the MSB
 	command |= ((word)spiCalcEvenParity(command)<<15);
 	
+	//SPI - begin transaction
 	SPI.beginTransaction(settings);
+	
 	digitalWrite(_cs, LOW);
 	SPI.transfer16(command);
 	digitalWrite(_cs, HIGH);
 	SPI.endTransaction();
 
-#ifdef AS5048A_DEBUG
-	Serial.print("Read (0x");
-	Serial.print(registerAddress, HEX);
-	Serial.print(") with command: 0b");
-	Serial.println(command, BIN);
-#endif
+	#ifdef AS5048A_DEBUG
+		Serial.print("Read (0x");
+		Serial.print(RegisterAddress, HEX);
+		Serial.print(") with command: 0b");
+		Serial.println(command, BIN);
+	#endif
 	
 	//Send the command and Now read the response
-	if (MeaValueMedian == true){
+	if (MeanValueMedian == true){
 	
-		//SPI - begin transaction
-		SPI.beginTransaction(settings);
 		for ( byte i = 0; i < 16; i++){
 			digitalWrite(_cs, LOW);
-			array_buffer[i] = SPI.transfer16(command) & ~0xC000;
+			array_data[i] = SPI.transfer16(command) & ~0xC000;
 			digitalWrite(_cs, HIGH);
-			//Serial.println(array_buffer[i], BIN);		
+			//Serial.println(array_data[i], BIN);		
 		}
+
+		quickSort(array_data, 0, 15);
+		readdata = ( array_data[8]  + array_data[9]  ) / 2 ;	
+		
 		SPI.endTransaction();
 		//SPI - end transaction
-
-		quickSort(array_buffer, 0, 15);
-		buffer = ( array_buffer[8]  + array_buffer[9]  ) / 2 ;	
 		
 		//Return the data, stripping the parity and error bits
-		return buffer;	
+		return readdata;	
 	}else{
-		//SPI - begin transaction
-		SPI.beginTransaction(settings);
 		digitalWrite(_cs, LOW);
-		buffer = SPI.transfer16(command);
+		readdata = SPI.transfer16(command);
 		digitalWrite(_cs, HIGH);
-		SPI.endTransaction();
-		//SPI - end transaction
 		
-#ifdef AS5048A_DEBUG
-	Serial.print("Read returned: ");
-	Serial.print(highByte(buffer), BIN);
-	Serial.print(lowByte(buffer), BIN);
-#endif
+		#ifdef AS5048A_DEBUG
+			Serial.print("Read returned: ");
+			Serial.print(highByte(readdata), BIN);
+			Serial.print(lowByte(readdata), BIN);
+		#endif
 
 		//Check if the error bit is set
 		//Если в 15 бите установлена 1 (ошибка передачи в предыдущей передаче ведущего устройства) errorFlag установить 1 иначе 0
-		if (bitRead(buffer,14)) {
-#ifdef AS5048A_DEBUG
-	Serial.println("Setting error bit");
-#endif
+		if (bitRead(readdata,14)) {
+			#ifdef AS5048A_DEBUG
+				Serial.println("Setting error bit");
+			#endif
 			errorFlag = true;
 		}else {
 			errorFlag = false;
 		}
-
-	//Return the data, stripping the parity and error bits
-	return buffer & ~0xC000;
+		
+		SPI.endTransaction();
+		//SPI - end transaction
+		
+		//Return the data, stripping the parity and error bits
+		return readdata & ~0xC000;
 	}
+	
 }
 
 
 /**
  * Write to a register
- * Takes the 16-bit  address of the target register and the 16 bit word of data
+ * Takes the 16-bit  address of the target register and the 16 bit word of WriteData
  * to be written to that register
  * Returns the value of the register after the write has been performed. This
  * is read back from the sensor to ensure a sucessful write.
  */
-word AS5048A::write(word registerAddress, word data) {
-
+word AS5048A::write(word RegisterAddress, word WriteData) {
 	word command = 0b0000000000000000; // PAR=0 R/W=W
-	command |= registerAddress;
-
+	word dataToSend = 0b0000000000000000;
+	
+	command |= RegisterAddress;
+	dataToSend |= WriteData;
+	
 	//Add a parity bit on the the MSB
-	command |= ((word)spiCalcEvenParity(command)<<15);
-
-	//Split the command into two bytes
-	byte right_byte = command & 0xFF;
-	byte left_byte = ( command >> 8 ) & 0xFF;
-
+	command |= ((word)spiCalcEvenParity(command) << 15);
+	
+	//Craft another packet including the data and parity
+	dataToSend |= ((word)spiCalcEvenParity(dataToSend) << 15);
+	
 #ifdef AS5048A_DEBUG
 	Serial.print("Write (0x");
-	Serial.print(registerAddress, HEX);
+	Serial.print(RegisterAddress, HEX);
 	Serial.print(") with command: 0b");
 	Serial.println(command, BIN);
 #endif
@@ -482,17 +505,8 @@ word AS5048A::write(word registerAddress, word data) {
 
 	//Start the write command with the target address
 	digitalWrite(_cs, LOW);
-	SPI.transfer(left_byte);
-	SPI.transfer(right_byte);
-	digitalWrite(_cs,HIGH);
-	
-	word dataToSend = 0b0000000000000000;
-	dataToSend |= data;
-
-	//Craft another packet including the data and parity
-	dataToSend |= ((word)spiCalcEvenParity(dataToSend)<<15);
-	right_byte = dataToSend & 0xFF;
-	left_byte = ( dataToSend >> 8 ) & 0xFF;
+	SPI.transfer16(command);
+	digitalWrite(_cs, HIGH);
 
 #ifdef AS5048A_DEBUG
 	Serial.print("Sending data to write: ");
@@ -500,20 +514,19 @@ word AS5048A::write(word registerAddress, word data) {
 #endif
 
 	//Now send the data packet
-	digitalWrite(_cs,LOW);
-	SPI.transfer(left_byte);
-	SPI.transfer(right_byte);
-	digitalWrite(_cs,HIGH);
+	digitalWrite(_cs, LOW);
+	SPI.transfer16(dataToSend);
+	digitalWrite(_cs, HIGH);
 	
 	//Send a NOP to get the new data in the register
 	digitalWrite(_cs, LOW);
-	left_byte =-SPI.transfer(0x00); // - ?
-	right_byte = SPI.transfer(0x00);
+	dataToSend = SPI.transfer16(AS5048A_NOP);
 	digitalWrite(_cs, HIGH);
+	SPI.endTransaction();
 
 	//SPI - end transaction
 	SPI.endTransaction();
 
 	//Return the data, stripping the parity and error bits
-	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
-	}
+	return dataToSend & ~0xC000;
+}
