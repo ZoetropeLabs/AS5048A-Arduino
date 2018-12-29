@@ -4,18 +4,18 @@
 
 //#define AS5048A_DEBUG
 
-const int AS5048A_NOP                     = 0x0000; // Фиктивная операция, нет информации.
-const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; //Регистр ошибок. Все ошибки очищаются путем доступа.
-const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; //Регистр управления программированием. Программирование должно быть включено до прожига памяти. Перед программированием проверка является обязательной. См. Процедуру программирования.
-const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; //Нулевое значение 8 бит старшх
-const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; //Нулевая значение 6 бит младших 
-const int AS5048A_DIAG_AGC                      = 0x3FFD; //(0-7)Значение автоматического регулирования усиления. 0 десятичной представляет высокое магнитное поле, 255 десятичных представляет низкое магнитное поле. (8-13)Флаги диагностики
-const int AS5048A_MAGNITUDE                     = 0x3FFE; //Значение выходной мощности CORDIC 
-const int AS5048A_ANGLE                         = 0x3FFF; //Угловое выходное значение, включая коррекцию нулевой позиции Resolution_ADC 14-bit resolution (0.0219°/LSB)
+const int AS5048A_NOP                           = 0x0000; // Dummy operation, no information.
+const int AS5048A_CLEAR_ERROR_FLAG              = 0x0001; // Error register. All errors are cleared by access.
+const int AS5048A_PROGRAMMING_CONTROL           = 0x0003; // Register control programming. Programming must be enabled before the memory is burned. Before programming verification is mandatory. See Programming Procedure.
+const int AS5048A_OTP_REGISTER_ZERO_POS_HIGH    = 0x0016; // Zero value of 8 bits high
+const int AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017; // Zero value 6 bits lower
+const int AS5048A_DIAG_AGC                      = 0x3FFD; // (0-7) The value of the automatic gain control. 0 decimal represents a high magnetic field, 255 decimal represents a low magnetic field. (8-13) Diagnostics Flags
+const int AS5048A_MAGNITUDE                     = 0x3FFE; // The value of the output power CORDIC
+const int AS5048A_ANGLE                         = 0x3FFF; // Angular output value, including zero position correction Resolution_ADC 14-bit resolution (0.0219 ° / LSB)
 
 /**
  * Constructor
- * Иницмализация библиотеки AS5048A
+ * Initialization of the AS5048A library
  */
 AS5048A::AS5048A(byte Arg_Cs){
   _cs = Arg_Cs;
@@ -32,23 +32,23 @@ void AS5048A::init(){
   /** 
   * 1MHz clock (AMS should be able to accept up to 10MHz)
   * mySettting (speedMaximum, dataOrder, dataMode)
-  * speedMaximum - максимальная скорость связи. Для чипа SPI, рассчитанного на частоту до 20 МГц , используйте 20000000.
-  * dataOrder - порядок вывода даннах в/из шины SPI,  может быть LSBFIRST (наименьший разряд(бит) первый) или MSBFIRST (старший разряд первый)
-  * dataMode - устанавливает режим работы шины SPI, задавая уровень сигнала синхронизации и фазу синхронизации
-  * SPI_MODE0 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-0)
-  * SPI_MODE1 (Уровень сигнала (CPOL)-0, Фаза (CPHA)-1) 
-  * SPI_MODE2 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-0)
-  * SPI_MODE3 (Уровень сигнала (CPOL)-1, Фаза (CPHA)-1)
+  * speedMaximum - maximum connection speed. For an SPI chip rated for up to 20 MHz, use 20,000,000.
+  * dataOrder - the order of data output to / from the SPI bus, it can be LSBFIRST (least significant bit (bit) first) or MSBFIRST (most significant first bit)
+  * dataMode - sets the SPI bus mode, setting the level of the synchronization signal and the synchronization phase
+  * SPI_MODE0 (Signal level (CPOL) -0, Phase (CPHA) -0)
+  * SPI_MODE1 (Signal level (CPOL) -0, Phase (CPHA) -1)
+  * SPI_MODE2 (Signal level (CPOL) -1, Phase (CPHA) -0)
+  * SPI_MODE3 (Signal level (CPOL) -1, Phase (CPHA) -1)
   * f(sample) = Min-10.2, Typ-11.25, Max-12.4. (kHz) 
-  * Поддерживаемые режимы  I2C AS5048B:
-  * • Случайное / последовательное чтение
-  * • Байт / Запись страницы
-  * • Стандартный: от 0 до 100 кГц, тактовая частота (ведомый режим)
-  * • Быстрый режим: тактовая частота от 0 до 400 кГц (ведомый режим)
-  * • Высокая скорость: от 0 до 3,4 МГц тактовой частоты (ведомый режим)
+  * Supported I2C AS5048B Modes:
+  * • Random / sequential read
+  * • Byte / Write page
+  * • Standard: 0 to 100 kHz, clock frequency (slave mode)
+  * • Fast mode: clock frequency from 0 to 400 kHz (slave mode)
+  * • High speed: 0 to 3.4 MHz clock frequency (slave mode)
   */    
   settings = SPISettings(1000000, MSBFIRST, SPI_MODE1);
-  //инициализация пина Slave Select если LOW ведомый взаимодействует с ведущим если HIGH ведомый игнорирует сигналы от ведущего
+ // initialization of the Slave Select pin if the LOW slave interacts with the master if the HIGH slave ignores the signals from the master
   pinMode(_cs, OUTPUT);
   //SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
   SPI.begin();
@@ -64,10 +64,10 @@ void AS5048A::close(){
 
 /**
  * Utility function used to calculate even parity of word
- * Вычисление бита чётности 14 битного адресса и запись в 15-й бит возвращаемого 16 битного слова
+ * Calculation of the parity bit of the 14-bit address and writing to the 15th bit of the returned 16-bit word
  */ 
 byte AS5048A::spiCalcEvenParity(word Value){
-  byte cnt = 0;
+  /**byte cnt = 0;
   byte i;
   for (i = 0; i < 15; i++)
   {
@@ -77,14 +77,14 @@ byte AS5048A::spiCalcEvenParity(word Value){
     }
     Value >>= 1;
   }
-  return cnt & 0x1;
+  return cnt & 0x1;*/
   
-  //byte operand_compare =  bitRead(Value,0);
-  //byte i = 1;
-  //do{
-  //  operand_compare ^= bitRead(Value,i);
-  //} while ((i++) < 14);
-  //return operand_compare & 0x1;
+  byte operand_compare =  bitRead(Value,0);
+  byte i = 1;
+  do{
+    operand_compare ^= bitRead(Value,i);
+  } while ((i++) < 14);
+  return operand_compare & 0x1;
 }
 
 
@@ -106,52 +106,52 @@ int AS5048A::getRotation(){
 
 /**
  * Returns the raw angle directly from the sensor
- * Возвращает уголовое двоичное 14 битное угловое значение (DEC 16383)
- * Угловое выходное значение, включая коррекцию нулевой позиции.
+ * Returns an angular binary 14 bit angular value (DEC 16383)
+ * Angle output value including zero offset.
  */
 word AS5048A::getRawRotation(bool EnableMedianValue){
   return AS5048A::read(AS5048A_ANGLE, EnableMedianValue);
 }
 
 /**
- *Возвращает физическую величину в угловых градусах, полученное из двоичного 14 битного числа АЦП
+ *Returns the physical quantity in angular degrees, obtained from a binary 14 bit ADC number
  */
 float AS5048A::RotationRawToAngle(word DiscreteCode){
   return DiscreteCode * (360.0 / float(AS5048A_ANGLE));
 }
 
 /**
- *Возвращает физическую величину в угловых радианах, полученное из двоичного 14 битного числа АЦП
+ * Returns the physical quantity in angular radians, obtained from the binary 14-bit ADC number
  */
 float AS5048A::RotationRawToRadian(word DiscreteCode){
   return DiscreteCode * ((2 * PI) / float(AS5048A_ANGLE));
 }
 
 /**
- * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередаються адреса переменных 
+ * Returns the incremental and decrementing angle of rotation into the variable RotationAngle. The variable addresses are changed in the procedure.
  */
 void AS5048A::AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious){
 
   if (*AngleCurrent != *AnglePrevious){
-    //сделан круг на возростание с 360 на 1
+    //a circle is made to increase from 360 to 1
         if ((*AngleCurrent < 90) && (*AnglePrevious > 270) /*|| 
     (*AngleCurrent < 1.5707963267948966192313216916398) && (*AnglePrevious > 4.7123889803846898576939650749193) */){
             *RotationAngle += abs(360 - abs(*AngleCurrent - *AnglePrevious));
       _reverse = true;
     }  
-    //сделан круг на убывание с 1 на 360
+    //the circle is made to decrease from 1 to 360
         if ((*AnglePrevious < 90) && (*AngleCurrent > 270) /*|| 
     (*AnglePrevious < 1.5707963267948966192313216916398) && (*AngleCurrent > 4.7123889803846898576939650749193) */){
             *RotationAngle -= abs(360 - abs(*AngleCurrent - *AnglePrevious));
       _reverse = false;
     }
-        //ход по кругу на возростание
+        //ascending circle
         if (*AngleCurrent > *AnglePrevious && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true /*||
     *AngleCurrent > *AnglePrevious && ((*AngleCurrent < 1.5707963267948966192313216916398) && (*AnglePrevious > 4.7123889803846898576939650749193))!=true && ((*AnglePrevious < 1.5707963267948966192313216916398) && (*AngleCurrent > 4.7123889803846898576939650749193))!=true*/){
             *RotationAngle += abs(*AngleCurrent - *AnglePrevious);
       _reverse = true;
     } 
-        //ход по кругу на убывание
+        //descending circle
         if (*AnglePrevious > *AngleCurrent && ((*AngleCurrent < 90) && (*AnglePrevious > 270))!=true && ((*AnglePrevious < 90) && (*AngleCurrent > 270))!=true /*||
     *AnglePrevious > *AngleCurrent && ((*AngleCurrent < 1.5707963267948966192313216916398) && (*AnglePrevious > 4.7123889803846898576939650749193))!=true && ((*AnglePrevious < 1.5707963267948966192313216916398) && (*AngleCurrent > 4.7123889803846898576939650749193))!=true*/){
             *RotationAngle -= abs(*AnglePrevious - *AngleCurrent);
@@ -163,7 +163,7 @@ void AS5048A::AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, 
 }
 
 /**
-*возвращает минуты угла
+*returns the angle minutes
 */
 float AS5048A::GetAngularMinutes (float AngleAbsolute){
   return ( AngleAbsolute - int(AngleAbsolute) ) * 60;
@@ -171,28 +171,28 @@ float AS5048A::GetAngularMinutes (float AngleAbsolute){
 }
 
 /**
-*возвращает секунды угла
+*returns seconds of angle
 */
 float AS5048A::GetAngularSeconds (float AngleAbsolute){
   return (AS5048A::GetAngularMinutes(AngleAbsolute) - int(AS5048A::GetAngularMinutes(AngleAbsolute)) ) * 60;
 }
 
 /**
-*возвращает перемещение прямозубой зубчатой рекйки в мм
-*WheelRotationAngle - Угол поворота колеса
-*NormalModule - Модуль нормальный
-*NumberGearTeeth - Число зубьев колеса или число заходов червяка
-*(PI * NormalModule) - Шаг торцовый
-*20 - Угол наклона зуба
+*returns the movement of the spur gear in mm
+*WheelRotationAngle - Angle of rotation of the wheel
+*NormalModule - Module normal
+*NumberGearTeeth - The number of teeth of the wheel or the number of visits of the worm
+*(PI * NormalModule) - Front Pitch
+*20 - the angle of the tooth
 */ 
 float AS5048A::LinearDisplacementRack ( float WheelRotationAngle, float NormalModule, float NumberGearTeeth){
   return WheelRotationAngle * (( ( (PI * NormalModule) / cos(radians(20)) ) * NumberGearTeeth) / 360);
 } 
 
 /**
-*возвращает перемещение винтовой предачи в мм
-*StepGroove - шаг резьбы винта
-*ScrewRotationAngle - угол поворота винта
+*returns the movement of the screw in mm
+*StepGroove - screw thread pitch
+*ScrewRotationAngle - screw rotation angle
 */ 
 float AS5048A::LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGroove){  
   return (ScrewRotationAngle * (StepGroove / 360));
@@ -201,8 +201,8 @@ float AS5048A::LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGro
 /**
  * returns the value of the state register
  * @return 16 bit word containing flags
- * Возвращает значение диагностического регистра датчика
- * размером 16 бит из них 13 значищих (пример 1101100110101)
+ * Returns the value of the diagnostic sensor register
+ * 16 bits in size, 13 of them are significant (example 1101100110101)
  */
 word AS5048A::getState(){
   return read(AS5048A_DIAG_AGC,false) & ~0xC000;
@@ -210,7 +210,7 @@ word AS5048A::getState(){
 
 /**
  * Print the diagnostic register of the sensor
- * Вывести в порт Serial значение диагностического регистра датчика
+ * Output to the Serial port the value of the diagnostic register of the sensor
  */
 void AS5048A::printState(){
   word data;
@@ -219,20 +219,20 @@ void AS5048A::printState(){
     Serial.println("Error bit was set! (function printState register Diagnostics + Automatic Gain Control (AGC) )");
   }
   Serial.println(" ");
-  Serial.println("Значение автоматического регулирования усиления манитного поля");
-  Serial.println("255 представляет собой низкое магнитное поле");
-  Serial.println("0 представляет собой высокое магнитное поле");
+  Serial.println("The value of the automatic control of the magnetic field gain");
+  Serial.println("255 is a low magnetic field");
+  Serial.println("0 is a high magnetic field");
   //Serial.println(lowByte(data), BIN);
   Serial.println(lowByte(data), DEC);
   
-/**Диагностические функции AS5048
-* AS5048 обеспечивает диагностические функции ИС, а также диагностические функции магнитного поля ввода. Доступны следующие диагностические флаги: см. Рис. 22 адрес регистра x3FFD (AS5048A) или адрес 31 адреса адреса 251 деци (AS5048B)
-  * • OCF (Компенсация смещения завершена), логический максимум указывает законченный алгоритм компенсации смещения. После включения флаг всегда остается логически высоким.
-  * • COF (CORDIC Overflow), логический максимум указывает на ошибку вне диапазона в части CORDIC. Когда этот бит установлен, данные угла и величины недействительны. Абсолютный выход сохраняет последнее действительное угловое значение.
-  * • COMP low, указывает на высокое магнитное поле. Рекомендуется дополнительно контролировать величину величины.
-  * • COMP высокий, указывает на слабое магнитное поле. Рекомендуется контролировать величину величины.
+/**Diagnostic Functions AS5048
+  * See Figure 22 register address x3FFD (AS5048A) or Figure 31 register address 251 dec (AS5048B)
+  * • OCF (Offset Compensation Finished), logic high indicates the finished Offset Compensation Algorithm. After power up the flag remains always to logic high.
+  * • COF (CORDIC Overflow), logic high indicates an out of range error in the CORDIC part. When this bit is set, the angle and magnitude data is invalid. The absolute output maintains the last valid angular value.
+  * • COMP low, indicates a high magnetic field. It is recommended to monitor in addition the magnitude value.
+  * • COMP high, indicated a weak magnetic field. It is recommended to monitor the magnitude value.
  */
-  Serial.print("Флаги диагностики");
+  Serial.print("Diagnostic flags");
   Serial.print(" OCF-");
   Serial.print(bitRead(data,8), DEC);
   Serial.print(" COF-");
@@ -249,7 +249,7 @@ void AS5048A::printState(){
 /**
  * Returns the value used for Automatic Gain Control (Part of diagnostic
  * register)
- * Возвращает значение Автоматического контроля усления диагностического регистра
+ * Returns the value of the automatic gain control diagnostic register
  */
 byte AS5048A::getGain(){
   word data = AS5048A::getState();
@@ -261,23 +261,23 @@ byte AS5048A::getGain(){
 
 /**
  * Get and clear the error register by reading it
- * Очистить флаг ошибки и возврат три бита (0бит Framing Error, 1бит Command Invalid, 2бит Parity Error)
- * Регистр ошибок. Все ошибки очищаются путем доступа
-  Возможные условия, которые заставляют установить ERROR FLAG:
-  • Неверный паритет
-  • Неправильное количество часов (без полного цикла передачи или слишком много часов)
-  • Недействительная команда
-  • Ошибка кадра
-  Примечание (ы): Если флаг ошибки установлен на высокий из-за
-  проблема связи, флаг остается установленным до тех пор, пока он не будет
-  очищается командой CLERAR ERROR FLAG.
+ * Clear error flag and return three bits (0bit Framing Error, 1bit Command Invalid, 2bit Parity Error)
+ * Register of errors. All errors are cleared by access.
+  Possible conditions that force to install ERROR FLAG:
+  • Invalid parity
+  • Incorrect hours (without full transfer cycle or too many hours)
+  • Invalid command
+  • Frame error
+  Note (s): If the error flag is set to high due to
+  communication problem, the flag remains set until it is
+  cleared by the CLEAR ERROR FLAG command.
  */
 word AS5048A::getErrors(){
   return AS5048A::read(AS5048A_CLEAR_ERROR_FLAG,false) & ~0xC000;
 }
 
 /**
- * Получить и очистка регистра ошибок и вывести значение регистра в Serial порт
+ * Retrieve and clear the error register and output the register value to the serial port
  */
 void AS5048A::printErrors(){
   word data;
@@ -285,47 +285,52 @@ void AS5048A::printErrors(){
   if(AS5048A::error()){
     Serial.println("Error bit was set! (function printErrors register Clear Error Flag)");
   }
-  Serial.println("Регистр ошибок");
-  Serial.print("Ошибка кадра (пакета) комманды ");
+  Serial.println("Error register");
+  Serial.print("Command frame (packet) error ");
   Serial.println(bitRead(data,0), DEC);
-  Serial.print("Неверная команда ");
+  Serial.print("Invalid command ");
   Serial.println(bitRead(data,1), DEC);
-  Serial.print("Ошибка бита четности ");
+  Serial.print("Parity bit error ");
   Serial.println(bitRead(data,2), DEC);
   Serial.println(" ");
   //Serial.println(data, BIN);
 } 
 
 /**
- *Функция посылает команда NOP и возвращает содержимое регистра. Команда NOP представляет собой фиктивную 
- *запись в регитр x0000 сенсора AS5048
+ *The function sends the NOP command and returns the contents of the register. The NOP team is a fake
+ *write to register x0000 sensor AS5048
  */ 
 word AS5048A::DummyOperNoInf(){
   return AS5048A::read(AS5048A_NOP,false);  
 }
 
 /**
- *Процидура записывает абсолютное значен измернное сенсером AS5048, случайно расположеного магнита на оси вращения,
- *как нулевую позицию угла 
+ *The procedure records the absolute value measured by the AS5048 sensor, a randomly located magnet on the axis of rotation,
+ *as zero angle position
 
-Программирование AS5048
-Программирование нулевого положения: абсолютное положение угла может быть запрограммировано по интерфейсу. Это может быть полезно для случайного размещения магнита на оси вращения. Считывание в механическом нулевом положении может быть выполнено и записано обратно в ИС. При постоянном программировании позиция не обратима, хранящаяся в ИС. Это программирование может выполняться только один раз. Чтобы упростить вычисление нулевой позиции, необходимо только записать значение в ИС, которое было зачитано ранее из регистра угла.
+AS5048 programming
+Zero Position Programming: The absolute angle position can be programmed through the interface. This can be useful for randomly 
+placing the magnet on the axis of rotation. A mechanical zero reading can be performed and written back to the IC. With constant 
+programming, the position is not reversible, stored in the IC. This programming can only be done once. To simplify the calculation 
+of the zero position, it is only necessary to record the value in the IC, which was previously read from the angle register.
 
-Последовательность программирования с проверкой: для программирования нулевой позиции необходимо выполнить следующую последовательность:
-1. Запишите 0 в регистр нулевой позиции OTP, чтобы очистить.
-2. Считать информацию текущего угла
-3. Запишите считанное положение угла в регистр нулевой позиции OTP.
+Programming sequence with verification: to program a zero position, the following sequence must be performed:
+1. Write 0 to the OTP zero position register to clear.
+2. Read current angle information
+3. Write the read angle position in the OTP zero register.
 
-Теперь запись нулевого положение. Если вы хотите записать значение регистра OTP, отправьте:
+Now record the zero position. If you want to write the value of the OTP register, send:
 
-4. Установите бит программирования (Programming Enable) чтобы записать значение регистра управления OTP.
-5. Установите бит записи (Burn), чтобы запустить процедуру автоматического программирования.
-6. Считайте информацию текущего угла если (равно 0) то.
-7. Установите бит Verify для повторной загрузки OTP данных во внутренние регистры.
-8. Считайте информацию текущего угла для проверки (равно 0).
+4. Set the programming bit to write the value of the OTP control register.
+5. Set the write bit (Burn) to start the automatic programming procedure.
+6. Read the current angle information if (equal to 0) then.
+7. Set the Verify bit to reload OTP data into internal registers.
+8. Read the current angle information for verification (equal to 0).
 
-Программирование может быть выполнено в режиме 5 В с использованием внутреннего LDO или 3V, но с минимальным напряжением питания 3,3 В. В случае работы 3 В также требуется конденсатор 10 мкФ на выводе VDD3.
+Programming can be done in 5 V mode using an internal LDO or 3V, but with a minimum supply voltage of 3.3 V. 
+In the case of 3 V operation, a 10 µF capacitor on the VDD3 pin is also required.
  */
+
 void AS5048A::ProgAbsolAngleZeroPosit(){
   word rotationzero = 0b0000000000000000;
   word programcontrol = 0b00000000000000;
@@ -363,7 +368,7 @@ word AS5048A::getZeroPosition(){
 }
 
 /**
- * функция для сортировки по возрастанию
+ * ascending sort function
  */
 void AS5048A::quickSort(word *Arr, int Left, int Right) { 
   int i = Left, j = Right; 
@@ -394,7 +399,7 @@ void AS5048A::quickSort(word *Arr, int Left, int Right) {
 
 /**
  * Check if an error has been encountered.
- * Флаг ошибки, указывающий на ошибку передачи в предыдущей передаче ведущего устройства (Master)
+ * Error flag indicating a transmission error in a previous master transmission (Master)
  */
 bool AS5048A::error(){
   return _errorFlag;
@@ -404,7 +409,7 @@ bool AS5048A::error(){
  * Read a register from the sensor
  * Takes the address of the register as a 16 bit word
  * Returns the value of the register
- * Отправка комманды на чтения регистров сенсора AS5048A
+ * Sending a command to read AS5048A sensor registers
  */
 word AS5048A::read(word RegisterAddress, bool MeanValueMedian){
   word readdata;
@@ -461,7 +466,7 @@ word AS5048A::read(word RegisterAddress, bool MeanValueMedian){
     #endif
 
     //Check if the error bit is set
-    //Если в 15 бите установлена 1 (ошибка передачи в предыдущей передаче ведущего устройства) _errorFlag установить 1 иначе 0
+    //If the 15 bit is set to 1 (transmission error in the previous transfer of the master) _errorFlag set to 1 otherwise 0
     if (bitRead(readdata,14)) {
       #ifdef AS5048A_DEBUG
         Serial.println("Setting error bit");
