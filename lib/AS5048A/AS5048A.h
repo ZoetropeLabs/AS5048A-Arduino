@@ -18,7 +18,7 @@ class AS5048A{
   //byte clk;
   //word transaction(word data);
   word _position;
-  bool _reverse; //Флаг напраления движения ползуна станка
+  bool _reverse; // Flag of the direction of movement of the machine ram
 
   SPISettings settings;
 
@@ -44,9 +44,9 @@ class AS5048A{
    * Read a register from the sensor
    * Takes the address of the register as a 16 bit word
    * Returns the value of the register
-   * MeaValueMedian разрешает найти медианое среднее значение из 16 измерений так как
-   * после 16 тактов CLK циклов, CSn необходимо вернуть к высокому состоянию, чтобы сбросить
-     некоторые части ядра интерфейса.
+   * MeaValueMedian allows you to find the median average of 16 measurements because
+   * after 16 CLK cycles, CSn must be returned to a high state in order to reset
+   * some parts of the kernel interface.
    */
   word read(word RegisterAddress, bool MeanValueMedian = false);
 
@@ -72,49 +72,49 @@ class AS5048A{
   word getRawRotation(bool EnableMedianValue = false);
 
   /**
-   * Возвращает физическую величину в угловых градусах, олученное из двоичного 14 битного числа АЦП 
+   * Returns the physical quantity in angular degrees, obtained from a binary 14 bit ADC number
    */
   float RotationRawToAngle (word DiscreteCode);
   
   /**
-   *Возвращает физическую величину в угловых радианах, полученное из двоичного 14 битного числа АЦП
+   * Returns the physical quantity in angular radians, obtained from the binary 14-bit ADC number
    */
   float RotationRawToRadian(word DiscreteCode);
 
   /**
-  * Возвращает инкрементный и декрементный угол поворота в переменную RotationAngle в процедуру прередають адреса переменных 
+  * Returns the incremental and decrementing rotation angle in the variable RotationAngle. The variable addresses are passed to the procedure. 
   */
   void AbsoluteAngleRotation (float *RotationAngle, float *AngleCurrent, float *AnglePrevious);
 
   /**
-  *функция для сортировки по возрастанию
+  * Function to sort ascending
   */
   void quickSort(word *Arr, int Left, int Right);
 
   /**
-  *возвращает минуты угла
+  * Returns the angle minutes
   */
   float GetAngularMinutes (float AngleAbsolute);
 
   /**
-  *возвращает секунды угла
+  * Returns seconds of angle
   */
   float GetAngularSeconds (float AngleAbsolute);
   
   /**
-  *возвращает перемещение прямозубой зубчатой рекйки в мм
-  *WheelRotationAngle - Угол поворота колеса
-  *NormalModule - Модуль нормальный
-  *NumberGearTeeth - Число зубьев колеса или число заходов червяка
-  *(PI * NormalModule) - Шаг торцовый
-  *20 - Угол наклона зуба
+  *Returns the movement of the spur gear in mm
+  *WheelRotationAngle - Angle of rotation of the wheel
+  *NormalModule - normal gear module
+  *NumberGearTeeth - The number of wheel teeth (gears) or the number of worm hits
+  *(PI * NormalModule) - Front Pitch
+  *20 - the angle of the tooth
   */ 
   float LinearDisplacementRack ( float WheelRotationAngle, float NormalModule, float NumberGearTeeth);
   
   /**
-  *возвращает перемещение винтовой предачи в мм
-  *StepGroove - шаг резьбы винта
-  *ScrewRotationAngle - eгол поворота винта
+  *Returns the movement of the screw in mm
+  *StepGroove - screw thread pitch
+  *ScrewRotationAngle - screw rotation angle
   */ 
   float LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGroove);
 
@@ -141,19 +141,19 @@ class AS5048A{
   word getErrors();
   
   /**
-   * Получить и очистить регистр ошибок и вывести значение регистра в Serial порт
+   * Get and clear the error register and output the register value to the Serial port
    */
   void printErrors();
   
   /**
-   *Функция посылает команда NOP и возвращает содержимое регистра. Команда NOP представляет собой фиктивную 
-   *запись в регитр x0000 сенсора AS5048
+   *The function sends the NOP command and returns the contents of the register. The NOP team is a fake
+   *write to register x0000 sensor AS5048
    */
   word DummyOperNoInf();
   
   /**
-   *Процидура записывает абсолютное значен измернное сенсером AS5048, случайно расположеного магнита на оси вращения,
-   *как нулевую позицию угла 
+   *The procedure records the absolute value measured by the sensor AS5048, a randomly located magnet on the axis of rotation,
+   *as zero angle position
    */
   void ProgAbsolAngleZeroPosit ();
   
@@ -176,7 +176,7 @@ class AS5048A{
   
   private:
   /**
-   * возвращает бит чётности
+   * returns the parity bit
    */
   byte spiCalcEvenParity(word);
 };
