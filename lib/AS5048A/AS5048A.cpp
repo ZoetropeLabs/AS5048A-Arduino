@@ -205,7 +205,7 @@ float AS5048A::LinearMotionHelicalGear ( float ScrewRotationAngle, float StepGro
  * 16 bits in size, 13 of them are significant (example 1101100110101)
  */
 word AS5048A::getState(){
-  return read(AS5048A_DIAG_AGC,false) & ~0xC000;
+  return AS5048A::read(AS5048A_DIAG_AGC,false) & ~0xC000;
 }
 
 /**
@@ -392,9 +392,9 @@ void AS5048A::quickSort(word *Arr, int Left, int Right) {
 
   /* recursion */ 
   if (Left < j) 
-    quickSort(Arr, Left, j); 
+    AS5048A::quickSort(Arr, Left, j); 
   if (i < Right) 
-    quickSort(Arr, i, Right); 
+    AS5048A::quickSort(Arr, i, Right); 
 }
 
 /**
@@ -446,7 +446,7 @@ word AS5048A::read(word RegisterAddress, bool MeanValueMedian){
       //Serial.println(array_data[i], BIN);   
     }
 
-    quickSort(array_data, 0, 15);
+    AS5048A::quickSort(array_data, 0, 15);
     readdata = ( array_data[8]  + array_data[9]  ) / 2 ;  
     
     SPI.endTransaction();
