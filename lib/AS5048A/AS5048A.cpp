@@ -46,6 +46,7 @@ void AS5048A::init(){
 
 	//setup pins
 	pinMode(_cs, OUTPUT);
+	digitalWrite(_cs, HIGH);
 
 	//SPI has an internal SPI-device counter, it is possible to call "begin()" from different devices
 	SPI.begin();
