@@ -11,10 +11,20 @@ static const uint16_t AS5048A_OTP_REGISTER_ZERO_POS_LOW     = 0x0017;
 static const uint16_t AS5048A_DIAG_AGC                      = 0x3FFD;
 static const uint16_t AS5048A_MAGNITUDE                     = 0x3FFE;
 static const uint16_t AS5048A_ANGLE                         = 0x3FFF;
+static const uint16_t AS5048A_NOP 	                        = 0x0000;
+static const uint16_t AS5048A_READ_FLAG						= 0b0100000000000000; 
+static const uint16_t AS5048A_WRITE_FLAG					= 0b0000000000000000; 
 
 static const float AS5048A_MAX_VALUE = 8191.0;
 static const float AS5048A_TWICE_MAX_VALUE = AS5048A_MAX_VALUE * 2.0;
 static const float AS5048A_PI  = 3.14159265358979323846;
+
+// Hamming weight computation masks
+static const uint16_t mask_01  = 0x5555; //binary: 0101...
+static const uint16_t mask_0011  = 0x3333; //binary: 00110011..
+static const uint16_t mask_00001111  = 0x0f0f; //binary:  4 zeros,  4 ones ...
+static const uint64_t h01 = 0x0101010101010101; //the sum of 256 to the power of 0,1,2,3...
+
 
 /**
  * Constructor usign response delay (ESP32 and similars)
@@ -22,8 +32,7 @@ static const float AS5048A_PI  = 3.14159265358979323846;
 AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
 	_cs(arg_cs),
 	response_delay_millis(arg_response_delay_millis),
-	errorFlag(false),
-	position(0)  {
+	errorFlag(false) {
 }
 
 /**
@@ -32,8 +41,7 @@ AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
 AS5048A::AS5048A(uint8_t arg_cs):
 	_cs(arg_cs),
 	response_delay_millis(0),
-	errorFlag(false),
-	position(0)  {
+	errorFlag(false) {
 }
 
 /**
@@ -61,23 +69,18 @@ void AS5048A::close(){
 }
 
 /**
- * Utility function used to calculate even parity of an unigned 16 bit integer
+ * Utility function used to calculate even parity of an unigned 16 bit integer.
+ * It computes the hamming weight using wikipedia article: https://en.wikipedia.org/wiki/Hamming_weight
+ * checking if it's even.
  */
-uint8_t AS5048A::spiCalcEvenParity(uint16_t value){
-	uint8_t cnt = 0;
-
-	for (uint8_t i = 0; i < 16; i++)
-	{
-		if (value & 0x1)
-		{
-			cnt++;
-		}
-		value >>= 1;
-	}
-	return cnt & 0x1;
+uint16_t AS5048A::spiCalcEvenParity(uint16_t x){
+	x -= (x >> 1) & mask_01;             //put count of each 2 bits into those 2 bits
+    x = (x & mask_0011) + ((x >> 2) & mask_0011); //put count of each 4 bits into those 4 bits 
+    x = (x + (x >> 4)) & mask_00001111;        //put count of each 8 bits into those 8 bits 
+    uint16_t hamming_weight = (x * h01) >> 56;  //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ... 
+	uint16_t is_even = hamming_weight & 0x0001;
+	return (uint16_t)(is_even<<15);
 }
-
-
 
 /**
  * Get the rotation of the sensor relative to the zero position.
@@ -85,12 +88,9 @@ uint8_t AS5048A::spiCalcEvenParity(uint16_t value){
  * @return {int32_t} between -2^13 and 2^13
  */
 int32_t AS5048A::getRotation(){
-
 	uint16_t data = AS5048A::getRawRotation();
-	int32_t rotation = (int32_t)data - (int32_t)position;
+	int32_t rotation = (int32_t)data;
 	if(rotation > 8191) rotation = -((0x3FFF)-rotation); //more than -180
-	//if(rotation < -0x1FFF) rotation = rotation+0x3FFF;
-
 	return rotation;
 }
 
@@ -163,14 +163,23 @@ uint16_t AS5048A::getErrors(){
 /*
  * Set the zero position
  */
-void AS5048A::setZeroPosition(uint16_t arg_position){
-	position = arg_position % 0x3FFF;
+bool AS5048A::setZeroPosition(uint16_t position){
+	uint8_t low_byte     = (position & 0b0000000000111111);
+	uint16_t result_low  = write(AS5048A_OTP_REGISTER_ZERO_POS_LOW, low_byte);
+	Serial.println(result_low);
+	uint8_t high_byte    = (position >> 6 & 0b0000000011111111);
+	uint16_t result_high = write(AS5048A_OTP_REGISTER_ZERO_POS_HIGH, high_byte);
+	Serial.println(result_high);
+	return (result_high == high_byte) && (result_low == low_byte);
 }
 
 /**
  * Returns the current zero position
  */
 uint16_t AS5048A::getZeroPosition(){
+	uint16_t low_byte  = read(AS5048A_OTP_REGISTER_ZERO_POS_LOW);
+	uint16_t high_byte = read(AS5048A_OTP_REGISTER_ZERO_POS_HIGH);
+	uint16_t position = ( ( (high_byte & 0x00FF) << 8 ) & 0xFF00) | (low_byte & 0x00FF);
 	return position;
 }
 
@@ -187,23 +196,16 @@ bool AS5048A::error(){
  * Returns the value of the register
  */
 uint16_t AS5048A::read(uint16_t registerAddress){
-	uint16_t command = 0b0100000000000000; // PAR=0 R/W=R
-	command = command | registerAddress;
-
-	//Add a parity bit on the the MSB
-	command |= ((uint16_t)spiCalcEvenParity(command)<<15);
+	uint16_t command = registerAddress | AS5048A_READ_FLAG;
+	command |= spiCalcEvenParity(command);
 
 #ifdef AS5048A_DEBUG
-	Serial.print("Read (0x");
-	Serial.print(registerAddress, HEX);
-	Serial.print(") with command: 0b");
-	Serial.println(command, BIN);
+	Serial.println("Read (0x" + String(registerAddress, HEX) + 
+		") with command: 0b" + String(command, BIN));
 #endif
 
-	//SPI - begin transaction
 	SPI.beginTransaction(settings);
 
-	//Send the command
 	digitalWrite(_cs, LOW);
 	SPI.transfer16(command);
 	digitalWrite(_cs,HIGH);
@@ -212,29 +214,30 @@ uint16_t AS5048A::read(uint16_t registerAddress){
 		delay(response_delay_millis);
 	}
 
-	//Now read the response
+	/** 
+	 * According to the specs:
+	 * "The content of the desired register is available in the MISO register of the
+	 * master device at the end of the second transmission cycle"
+	 * We send a NOP and expect the response to be the value of the register 
+	 * we requested to read.
+	 */
 	digitalWrite(_cs, LOW);
-	uint16_t response = SPI.transfer16(0x0000);
+	uint16_t response = SPI.transfer16(AS5048A_NOP);
 	digitalWrite(_cs, HIGH);
 
-	//SPI - end transaction
 	SPI.endTransaction();
 
 #ifdef AS5048A_DEBUG
-	Serial.print("Read returned: ");
-	Serial.println(response, BIN);
+	Serial.print("Read returned: " + String(response, BIN));
 #endif
 
 	//Check if the error bit is set
-	if (response & 0x4000) {
+	errorFlag = response & 0x4000;
 #ifdef AS5048A_DEBUG
+	if (errorFlag) {
 		Serial.println("Setting error bit");
+	}
 #endif
-		errorFlag = true;
-	}
-	else {
-		errorFlag = false;
-	}
 
 	//Return the data, stripping the parity and error bits
 	return response & ~0xC000;
@@ -242,8 +245,6 @@ uint16_t AS5048A::read(uint16_t registerAddress){
 
 
 /**
- * TODO: make code 16-compabile so that there is not need to play around
- * splitting and merging bytes. Also make sure it supports ESP32.
  * Write to a register
  * Takes the 16-bit  address of the target register and the unsigned 16 bit of data
  * to be written to that register
@@ -252,64 +253,44 @@ uint16_t AS5048A::read(uint16_t registerAddress){
  */
 uint16_t AS5048A::write(uint16_t registerAddress, uint16_t data) {
 
-	uint16_t command = 0b0000000000000000; // PAR=0 R/W=W
-	command |= registerAddress;
-
-	//Add a parity bit on the the MSB
-	command |= ((uint16_t)spiCalcEvenParity(command)<<15);
-
-	//Split the command into two bytes
-	uint8_t right_byte = command & 0xFF;
-	uint8_t left_byte = ( command >> 8 ) & 0xFF;
+	uint16_t command = registerAddress | AS5048A_WRITE_FLAG;
+	command |= spiCalcEvenParity(command);
 
 #ifdef AS5048A_DEBUG
-	Serial.print("Write (0x");
-	Serial.print(registerAddress, HEX);
-	Serial.print(") with command: 0b");
-	Serial.println(command, BIN);
+	Serial.println("Write (0x" + String(registerAddress, HEX) + 
+		") with command: 0b" + String(command, BIN));
 #endif
 
-	//SPI - begin transaction
 	SPI.beginTransaction(settings);
 
-	//Start the write command with the target address
 	digitalWrite(_cs, LOW);
-	SPI.transfer(left_byte);
-	SPI.transfer(right_byte);
+	SPI.transfer16(command);
 	digitalWrite(_cs,HIGH);
 
-	uint16_t dataToSend = 0b0000000000000000;
-	dataToSend |= data;
-
-	//Craft another packet including the data and parity
-	dataToSend |= ((uint16_t)spiCalcEvenParity(dataToSend)<<15);
-	right_byte = dataToSend & 0xFF;
-	left_byte = ( dataToSend >> 8 ) & 0xFF;
+	uint16_t dataToSend = data | AS5048A_WRITE_FLAG;
+	dataToSend |= spiCalcEvenParity(dataToSend);
 
 #ifdef AS5048A_DEBUG
-	Serial.print("Sending data to write: ");
-	Serial.println(dataToSend, BIN);
+	Serial.println("Sending data to write: " + String(dataToSend, BIN));
 #endif
 
-	//Now send the data packet
 	digitalWrite(_cs,LOW);
-	SPI.transfer(left_byte);
-	SPI.transfer(right_byte);
+	SPI.transfer16(dataToSend);
 	digitalWrite(_cs,HIGH);
 
 	if(response_delay_millis > 0) {
 		delay(response_delay_millis);
 	}
-
+	
+	SPI.endTransaction();
+	SPI.beginTransaction(settings);
 	//Send a NOP to get the new data in the register
 	digitalWrite(_cs, LOW);
-	left_byte =-SPI.transfer(0x00);
-	right_byte = SPI.transfer(0x00);
+	uint16_t response = SPI.transfer16(AS5048A_NOP);
 	digitalWrite(_cs, HIGH);
 
-	//SPI - end transaction
 	SPI.endTransaction();
 
 	//Return the data, stripping the parity and error bits
-	return (( ( left_byte & 0xFF ) << 8 ) | ( right_byte & 0xFF )) & ~0xC000;
+	return response & ~0xC000;
 }

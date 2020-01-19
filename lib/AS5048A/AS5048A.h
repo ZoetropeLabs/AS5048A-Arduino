@@ -10,7 +10,6 @@ class AS5048A{
 	uint8_t _cs;
 	// if the microcontroller is fast (e.g. ESP32) it should take a value around 50 so that the slave has time to send the response
 	uint8_t response_delay_millis;
-	uint16_t position;
 	SPISettings settings;
 
 	public:
@@ -84,9 +83,9 @@ class AS5048A{
 	uint16_t getErrors();
 
 	/*
-	 * Set the zero position
+	 * Set the zero position in the sensor
 	 */
-	void setZeroPosition(uint16_t arg_position);
+	bool setZeroPosition(uint16_t position);
 
 	/*
 	 * Returns the current zero position
@@ -114,6 +113,6 @@ class AS5048A{
 
 	private:
 
-	uint8_t spiCalcEvenParity(uint16_t);
+	uint16_t spiCalcEvenParity(uint16_t);
 };
 #endif
