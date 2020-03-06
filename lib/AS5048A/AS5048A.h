@@ -11,6 +11,7 @@ class AS5048A{
 	// if the microcontroller is fast (e.g. ESP32) it should take a value around 50 so that the slave has time to send the response
 	uint8_t response_delay_millis;
 	SPISettings settings;
+	bool invert_direction;
 
 	public:
 
@@ -18,6 +19,7 @@ class AS5048A{
 	 *	Constructors
 	 */
 	AS5048A(uint8_t arg_cs);
+	AS5048A(uint8_t arg_cs, bool invert_direction);
 	AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis);
 
 	/**

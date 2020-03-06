@@ -9,3 +9,11 @@ The second (optional) argument in the constructor is the time the library should
 using ATmega microcontrollers in Arduino UNO but it can be a problem using fast microcontrollers such as the ESP32. For these cases, a value of around 50 would do, but should be fine tuned.
 
 The angle sensor is described in more detail [here](zoetrope.io/AS5048)
+
+
+Installation
+================
+The simplest way to install the library into Arduino IDE is by creating a soft link:
+```
+ln -s $REPOSITORY_DIR/lib/AS5048A/ $ARDUINO_DIR/libraries/AS5048A
+```

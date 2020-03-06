@@ -31,6 +31,7 @@ static const uint64_t h01 = 0x0101010101010101; //the sum of 256 to the power of
  */
 AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
 	_cs(arg_cs),
+	invert_direction(false),
 	response_delay_millis(arg_response_delay_millis),
 	errorFlag(false) {
 }
@@ -40,6 +41,17 @@ AS5048A::AS5048A(uint8_t arg_cs, uint8_t arg_response_delay_millis):
  */
 AS5048A::AS5048A(uint8_t arg_cs):
 	_cs(arg_cs),
+	invert_direction(false),
+	response_delay_millis(0),
+	errorFlag(false) {
+}
+
+/**
+ * Constructor zero response delay (Arduino UNO and similars)
+ */
+AS5048A::AS5048A(uint8_t arg_cs, bool arg_invert_direction):
+	_cs(arg_cs),
+	invert_direction(arg_invert_direction),
 	response_delay_millis(0),
 	errorFlag(false) {
 }
@@ -103,6 +115,9 @@ int32_t AS5048A::getRotation(){
 float AS5048A::getRotationInDegrees(){
 	int32_t rotation = getRotation();
 	float degrees = 360.0 * (rotation + AS5048A_MAX_VALUE) / AS5048A_TWICE_MAX_VALUE;
+	if(invert_direction){
+		degrees = - degrees;
+	}
 	return degrees;
 }
 
